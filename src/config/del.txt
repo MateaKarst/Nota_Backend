@@ -1,0 +1,1 @@
+Config files (e.g., DB connection)
