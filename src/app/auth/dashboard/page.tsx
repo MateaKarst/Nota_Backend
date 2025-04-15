@@ -1,68 +1,72 @@
 "use client";
 
-import React from 'react'
-import Navbar from '@/components/Navbar'
-import Footer from '@/components/Footer'
+import React, { useState, useEffect } from 'react';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+import { supabase } from '@/lib/supabase';
+import EditableTable from '@/components/EditableTable'; // Make sure you import EditableTable
 
+type Socials = {
+    name: string;
+    url: string;
+    created: string;
+    updated: string;
+};
 
 const Dashboard = () => {
-    return <>
-        <Navbar />
+    const [socialsData, setSocialsData] = useState<Socials[]>([]);
 
-        <div className="container mt-5">
-            <div className="row">
-                <div className="col-md-5">
-                    <h3>Add Product</h3>
-                    <form>
-                        <div className="mb-3">
-                            <label className="form-label">Title</label>
-                            <input type="text" className="form-control" />
-                            <small className="text-danger"></small>
-                        </div>
-                        <div className="mb-3">
-                            <label className="form-label">Content</label>
-                            <textarea className="form-control"></textarea>
-                            <small className="text-danger"></small>
-                        </div>
-                        <div className="mb-3">
-                            <label className="form-label">Cost</label>
-                            <input type="number" className="form-control" />
-                            <small className="text-danger"></small>
-                        </div>
-                        <div className="mb-3">
-                            <label className="form-label">Banner Image</label>
-                            <div className="mb-2">
-                            </div>
-                            <input type="file" className="form-control" />
-                            <small className="text-danger"></small>
-                        </div>
-                        <button type="submit" className="btn btn-success w-100">
-                            Add Product
-                        </button>
-                    </form>
-                </div>
+    useEffect(() => {
+        const fetchSocials = async () => {
+            const { data, error } = await supabase.from('socials').select('*');
+            if (error) {
+                console.error('Error fetching socials:', error);
+            } else {
+                console.log("Dashboard Page ->", 'Socials:', data);
+                setSocialsData(data || []); // Store the fetched data in the state
+            }
+        };
 
-                <div className="col-md-7">
-                    <h3>Product List</h3>
-                    <table className="table table-bordered">
-                        <thead>
-                            <tr>
-                                <th>Title</th>
-                                <th>Content</th>
-                                <th>Cost</th>
-                                <th>Banner Image</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        </tbody>
-                    </table>
-                </div>
+        fetchSocials();
+    }, []); // Empty dependency array to run only once when the component mounts
+
+    // handleCellUpdate function to handle updating data (you can expand on this)
+    const handleCellUpdate = async (id: string | number, column: string, newValue: string) => {
+        const { error } = await supabase
+            .from('socials')
+            .update({ [column]: newValue })
+            .eq('id', id);
+        if (error) {
+            console.error('Error updating cell:', error);
+        } else {
+            console.log('Cell updated successfully');
+        }
+    };
+
+    return (
+        <>
+            <Navbar />
+
+            <div className="container mt-5">
+                <h2>Dashboard</h2>
+                {/* Pass the socialsData to EditableTable */}
+                <EditableTable
+                    table="role"
+                    data={socialsData}
+                    visibleColumns={["name","url", "created", "updated"]}
+                    columnLabels={{
+                        name: "Name",
+                        url: "URL",
+                        created: "Created At",
+                        updated: "Updated At",
+                    }}
+                    onCellUpdate={handleCellUpdate}
+                />
             </div>
-        </div>
 
-        <Footer />
-    </>
-}
+            <Footer />
+        </>
+    );
+};
 
-export default Dashboard
+export default Dashboard;
