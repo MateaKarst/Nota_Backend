@@ -1,10 +1,10 @@
+// src/app/auth/dashboard/page.tsx
 "use client";
 
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { supabase } from '@/lib/supabase';
-import EditableTable from '@/components/EditableTable'; // Make sure you import EditableTable
+import EditableTable from '@/components/EditableTable';
 
 type Socials = {
     name: string;
@@ -18,12 +18,18 @@ const Dashboard = () => {
 
     useEffect(() => {
         const fetchSocials = async () => {
-            const { data, error } = await supabase.from('socials').select('*');
-            if (error) {
+            try {
+                // Fetch data from the backend API (which hides the Supabase details)
+                const response = await fetch('/api/socials');
+                const data = await response.json();
+
+                if (response.ok) {
+                    setSocialsData(data); // Set the fetched data in the state
+                } else {
+                    console.error('Error fetching socials:', data.message);
+                }
+            } catch (error) {
                 console.error('Error fetching socials:', error);
-            } else {
-                console.log("Dashboard Page ->", 'Socials:', data);
-                setSocialsData(data || []); // Store the fetched data in the state
             }
         };
 
@@ -32,28 +38,35 @@ const Dashboard = () => {
 
     // handleCellUpdate function to handle updating data (you can expand on this)
     const handleCellUpdate = async (id: string | number, column: string, newValue: string) => {
-        const { error } = await supabase
-            .from('socials')
-            .update({ [column]: newValue })
-            .eq('id', id);
-        if (error) {
+        try {
+            const response = await fetch(`/api/socials/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ [column]: newValue }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                console.error('Error updating cell:', data.message || 'Unknown error');
+            } else {
+                console.log('Cell updated successfully');
+            }
+        } catch (error) {
             console.error('Error updating cell:', error);
-        } else {
-            console.log('Cell updated successfully');
         }
     };
+
 
     return (
         <>
             <Navbar />
-
             <div className="container mt-5">
                 <h2>Dashboard</h2>
-                {/* Pass the socialsData to EditableTable */}
                 <EditableTable
-                    table="role"
+                    table="socials"
                     data={socialsData}
-                    visibleColumns={["name","url", "created", "updated"]}
+                    visibleColumns={["name", "url", "created", "updated"]}
                     columnLabels={{
                         name: "Name",
                         url: "URL",
@@ -63,7 +76,6 @@ const Dashboard = () => {
                     onCellUpdate={handleCellUpdate}
                 />
             </div>
-
             <Footer />
         </>
     );
