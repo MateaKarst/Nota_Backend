@@ -1,9 +1,9 @@
+// src/app/auth/login/page.tsx
 "use client";
 
 import React, { useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { supabase } from "@/lib/supabase";
 import { useAppHook } from "@/context/AppUtils";
 import { useRouter } from "next/navigation";
 import * as yup from "yup";
@@ -41,20 +41,22 @@ const Login = () => {
 
     const onSubmit = async (formdata: LoginFormData) => {
         const { email, password } = formdata;
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ email, password })
         });
 
-        if (error) {
-            toast.error("Invalid login details");
+        const result = await response.json();
+
+        if (!response.ok) {
+            toast.error(result.message || "Invalid login details");
         } else {
-            if (data.session?.access_token) {
-                setIsLoggedIn(true);
-                localStorage.setItem("access_token", data.session.access_token);
-                toast.success("User logged in successfully");
-                router.push("/auth/dashboard");
-            }
+            setIsLoggedIn(true);
+            toast.success("User logged in successfully");
+            router.push("/auth/dashboard");
         }
     };
 

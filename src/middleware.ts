@@ -1,41 +1,38 @@
 // src/middleware.ts
 import { NextRequest, NextResponse } from 'next/server';
-//import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
+import jwt from 'jsonwebtoken';
 
-export async function middleware(request: NextRequest) {
-    // Log the request URL for debugging
-    console.log('🌐 Middleware triggered on:', request.nextUrl.pathname);
+const PUBLIC_PATHS = ['/', '/auth/login', '/favicon.ico'];
 
-    // Create middleware client to access request and response
-    const res = NextResponse.next();
-    // const supabase = createMiddlewareClient({ req: request, res });
+export async function middleware(req: NextRequest) {
+    const url = req.nextUrl.clone();
+    const pathname = url.pathname;
 
-    // // Check for the authenticated user from cookies
-    // const { data: { user }, error } = await supabase.auth.getUser();
+    if (PUBLIC_PATHS.includes(pathname)) {
+        return NextResponse.next();
+    }
 
-    // // Log the cookie value for debugging
-    // console.log('🧪 Middleware cookie:', request.headers.get('cookie'));
-    // console.log('🧑‍💻 Authenticated user:', user?.email || 'No user');
+    const token = req.cookies.get('sb-jwt')?.value;
 
-    // // If there's no user and we are trying to access restricted route, return 401
-    // if (request.nextUrl.pathname.startsWith('/api/socials')) {
-    //     if (!user) {
-    //         console.log('🚫 Unauthorized access to /api/socials');
-    //         return new NextResponse(
-    //             JSON.stringify({ message: 'Unauthorized' }),
-    //             { status: 401, headers: { 'Content-Type': 'application/json' } }
-    //         );
-    //     }
-    // }
+    if (!token) {
+        return NextResponse.redirect(new URL('/auth/login', req.url));
+    }
 
-    // // Log any errors in case Supabase fails to authenticate the user
-    // if (error) {
-    //     console.error('Error authenticating user:', error.message);
-    // }
-
-    return res;
+    try {
+        // Verify token with Supabase secret key
+        const decoded = jwt.verify(token, process.env.SUPABASE_JWT_SECRET!);
+        
+        if (decoded) {
+            return NextResponse.next();
+        } else {
+            return NextResponse.redirect(new URL('/auth/login', req.url));
+        }
+    } catch {
+        return NextResponse.redirect(new URL('/auth/login', req.url));
+    }
 }
 
 export const config = {
-    //matcher: ['/api/:path*'], // This matches all API routes
+    matcher: ['/auth/dashboard/:path*', '/api/private/:path*'],
 };
+

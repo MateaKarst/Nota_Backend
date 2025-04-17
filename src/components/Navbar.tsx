@@ -1,19 +1,22 @@
+// src/components/Navbar.tsx
 "use client";
 
 import Link from "next/link";
 import { useAppHook } from "@/context/AppUtils";
-import { supabase } from "@/lib/supabase";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 const Navbar = () => {
-    const { isLoggedIn } = useAppHook();
-    const router = useRouter();
+    const { isLoggedIn, setIsLoggedIn } = useAppHook();
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
 
     const handleLogout = async () => {
-        await supabase.auth.signOut();
-        router.push("/"); // Redirect to home or login after logout
+        setIsLoggingOut(true);  
+        await fetch("/api/auth/logout", { method: "POST" });
+        setIsLoggedIn(false); 
+        setIsLoggingOut(false);  
+        window.location.href = "/";  
     };
-
+    
     return (
         <nav className="navbar navbar-expand-lg px-4" style={{ backgroundColor: "#343a40" }}>
             <Link className="navbar-brand fw-bold text-white" href="/">SupaNext</Link>
@@ -22,7 +25,13 @@ const Navbar = () => {
                 <div className="ms-auto">
                     <Link className="me-3 text-white text-decoration-none" href="/auth/dashboard">Dashboard</Link>
                     <Link className="me-3 text-white text-decoration-none" href="/auth/profile">Profile</Link>
-                    <button className="btn btn-danger" onClick={handleLogout}>Logout</button>
+                    <button
+                        className="btn btn-danger"
+                        onClick={handleLogout}
+                        disabled={isLoggingOut} 
+                    >
+                        {isLoggingOut ? "Logging out..." : "Logout"}
+                    </button>
                 </div>
             ) : (
                 <div className="ms-auto">

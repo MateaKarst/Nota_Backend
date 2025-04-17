@@ -1,7 +1,8 @@
+// src/context/AppUtils.tsx
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase";  // Ensure supabase is initialized properly
+import { supabase } from "@/lib/supabase"; 
 
 interface UserProfile {
     email: string;
@@ -21,6 +22,15 @@ export const AppUtilsProvider = ({ children }: { children: React.ReactNode }) =>
     const [authUser, setAuthUser] = useState<UserProfile | null>(null);
 
     useEffect(() => {
+        // Check for 'sb-jwt' cookie on page load
+        const token = document.cookie.split('; ').find(row => row.startsWith('sb-jwt='));
+        
+        if (token) {
+            setIsLoggedIn(true);
+        } else {
+            setIsLoggedIn(false);
+        }
+
         // Subscribe to auth state changes
         const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
             if (session?.user) {
@@ -35,24 +45,6 @@ export const AppUtilsProvider = ({ children }: { children: React.ReactNode }) =>
             }
         });
 
-        // Fetch the user on initial load (in case the user is already logged in)
-        const fetchUser = async () => {
-            const { data } = await supabase.auth.getUser();
-            if (data.user) {
-                setAuthUser({
-                    email: data.user.email ?? "",
-                    name: data.user.user_metadata?.display_name ?? "No name"
-                });
-                setIsLoggedIn(true);
-            } else {
-                setAuthUser(null);
-                setIsLoggedIn(false);
-            }
-        };
-
-        fetchUser();
-
-        // Cleanup listener on component unmount
         return () => {
             authListener?.subscription.unsubscribe();
         };

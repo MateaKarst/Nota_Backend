@@ -1,4 +1,4 @@
-// src/lib/handlers/socialsHandler.ts
+// src/routes/handlers/socialsHandler.tsx
 import { supabase } from "@/lib/supabase";
 
 export async function getAllSocials() {

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
-import { formatDateTime } from "@/utils/Formatting";
+import { formatDateTime } from "@/utils/formatting";
 
 type EditableTableProps = {
     data: Record<string, unknown>[];
