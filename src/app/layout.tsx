@@ -6,8 +6,8 @@ import { AppUtilsProvider } from "@/context/AppUtils";
 import ProtectedRoute from "@/context/ProtectedRoutes";
 
 export const metadata: Metadata = {
-  title: "ACES Learning Hub",
-  description: "ACES Learning Hub Admin Panel",
+  title: "Admin Panel",
+  description: "Admin Panel",
 };
 
 export default function RootLayout({
