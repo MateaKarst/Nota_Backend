@@ -1,8 +1,7 @@
-// src/context/AppUtils.tsx
+// AppUtils.tsx
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase"; 
 
 interface UserProfile {
     email: string;
@@ -13,6 +12,8 @@ interface AppUtilsType {
     isLoggedIn: boolean;
     setIsLoggedIn: (state: boolean) => void;
     authUser: UserProfile | null;
+    cookies: string | null;
+    setCookies: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
 const AppUtilsContext = createContext<AppUtilsType | undefined>(undefined);
@@ -20,38 +21,48 @@ const AppUtilsContext = createContext<AppUtilsType | undefined>(undefined);
 export const AppUtilsProvider = ({ children }: { children: React.ReactNode }) => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [authUser, setAuthUser] = useState<UserProfile | null>(null);
+    const [cookies, setCookies] = useState<string | null>(null);
 
     useEffect(() => {
-        // Check for 'sb-jwt' cookie on page load
-        const token = document.cookie.split('; ').find(row => row.startsWith('sb-jwt='));
-        
+        // Commented out cookie handling for now
+        /*
+        const token = document.cookie
+            .split("; ")
+            .find((row) => row.startsWith("sb-jwt="))
+            ?.split("=")[1];
+
         if (token) {
             setIsLoggedIn(true);
+            setCookies(token);
+
+            // Optionally hydrate user from localStorage or fetch an endpoint like /api/me
+            const user = localStorage.getItem("authUser");
+            if (user) {
+                setAuthUser(JSON.parse(user));
+            }
         } else {
             setIsLoggedIn(false);
+            setCookies(null);
+            setAuthUser(null);
+        }
+        */
+
+        // Temporary fallback logic while cookies are disabled
+        const user = localStorage.getItem("authUser");
+        if (user) {
+            setIsLoggedIn(true);
+            setAuthUser(JSON.parse(user));
+        } else {
+            setIsLoggedIn(false);
+            setAuthUser(null);
         }
 
-        // Subscribe to auth state changes
-        const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-            if (session?.user) {
-                setAuthUser({
-                    email: session.user.email ?? "",
-                    name: session.user.user_metadata?.display_name ?? "No name"
-                });
-                setIsLoggedIn(true);
-            } else {
-                setAuthUser(null);
-                setIsLoggedIn(false);
-            }
-        });
-
-        return () => {
-            authListener?.subscription.unsubscribe();
-        };
     }, []);
 
     return (
-        <AppUtilsContext.Provider value={{ isLoggedIn, setIsLoggedIn, authUser }}>
+        <AppUtilsContext.Provider
+            value={{ isLoggedIn, setIsLoggedIn, authUser, cookies, setCookies }}
+        >
             {children}
         </AppUtilsContext.Provider>
     );
@@ -60,7 +71,8 @@ export const AppUtilsProvider = ({ children }: { children: React.ReactNode }) =>
 export const useAppHook = () => {
     const context = useContext(AppUtilsContext);
     if (!context) {
-        throw new Error("App Utils functions must be used within AppUtilsProvider");
+        throw new Error("AppUtils functions must be used within AppUtilsProvider");
     }
     return context;
 };
+

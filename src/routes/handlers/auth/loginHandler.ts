@@ -1,4 +1,5 @@
 // src/routes/handlers/auth/loginHandler.tsx
+// loginHandler.ts
 import { supabase } from '@/lib/supabase';
 
 export async function loginUser(email: string, password: string) {
@@ -8,5 +9,10 @@ export async function loginUser(email: string, password: string) {
         return { error: 'Invalid email or password', token: null };
     }
 
-    return { token: data.session.access_token, error: null };
+    return {
+        error: null,
+        token: data.session.access_token,
+        user: data.session.user,
+    };
 }
+

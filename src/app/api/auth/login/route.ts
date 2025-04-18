@@ -1,5 +1,6 @@
+// src/app/api/auth/login/route.ts
+// /api/auth/login/route.ts
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { checkRateLimit } from '@/utils/rateLimiter';
 import { loginUser } from '@/routes/handlers/auth/loginHandler';
 
@@ -11,16 +12,23 @@ export async function POST(req: Request) {
     }
 
     const { email, password } = await req.json();
-
-    const { token, error } = await loginUser(email, password);
+    const { error, token, user } = await loginUser(email, password);
 
     if (error || !token) {
         return NextResponse.json({ message: error }, { status: 401 });
     }
 
-    const cookieStore = await cookies();
+    const response = NextResponse.json({
+        message: 'Login successful',
+        user: {
+            email: user.email,
+            name: user.user_metadata?.display_name ?? 'No name',
+        },
+    });
 
-    cookieStore.set('sb-jwt', token, {
+    response.cookies.set({
+        name: 'sb-jwt',
+        value: token,
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         maxAge: 60 * 60 * 24,
@@ -28,5 +36,5 @@ export async function POST(req: Request) {
         sameSite: 'strict',
     });
 
-    return NextResponse.json({ message: 'Login successful' });
+    return response;
 }

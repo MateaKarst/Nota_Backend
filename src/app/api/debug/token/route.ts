@@ -1,12 +1,14 @@
-import { NextResponse } from 'next/server';
+// src/app/api/debug/token/route.ts
+// app/api/debug/token/route.ts
 import { cookies } from 'next/headers';
+import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 
 export async function GET() {
+    const supabase = createServerComponentClient({ cookies });
 
-    const userCookies = await cookies()
-    const token = userCookies.get('sb-jwt')?.value;
+    const {
+        data: { session },
+    } = await supabase.auth.getSession();
 
-    console.log('Server-side JWT:', token); // 👈 appears in terminal logs
-
-    return NextResponse.json({ token });
+    return Response.json({ token: session?.access_token ?? null });
 }
