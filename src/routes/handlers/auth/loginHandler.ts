@@ -1,5 +1,4 @@
 // src/routes/handlers/auth/loginHandler.tsx
-// loginHandler.ts
 import { supabase } from '@/lib/supabase';
 
 export async function loginUser(email: string, password: string) {
