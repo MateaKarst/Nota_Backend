@@ -1,5 +1,4 @@
 // src/app/api/auth/login/route.ts
-// /api/auth/login/route.ts
 import { NextResponse } from 'next/server';
 import { checkRateLimit } from '@/utils/rateLimiter';
 import { loginUser } from '@/routes/handlers/auth/loginHandler';
@@ -26,14 +25,13 @@ export async function POST(req: Request) {
         },
     });
 
-    response.cookies.set({
-        name: 'sb-jwt',
-        value: token,
+    // Set token as HttpOnly cookie
+    response.cookies.set('sb-access-token', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 60 * 60 * 24,
         path: '/',
-        sameSite: 'strict',
+        maxAge: 60 * 60 * 24, // 1 day
+        sameSite: 'lax',
     });
 
     return response;

@@ -1,4 +1,4 @@
-// AppUtils.tsx
+// src/context/AppUtils.tsx
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
@@ -21,47 +21,34 @@ const AppUtilsContext = createContext<AppUtilsType | undefined>(undefined);
 export const AppUtilsProvider = ({ children }: { children: React.ReactNode }) => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [authUser, setAuthUser] = useState<UserProfile | null>(null);
-    const [cookies, setCookies] = useState<string | null>(null);
 
     useEffect(() => {
-        // Commented out cookie handling for now
-        /*
-        const token = document.cookie
-            .split("; ")
-            .find((row) => row.startsWith("sb-jwt="))
-            ?.split("=")[1];
-
-        if (token) {
-            setIsLoggedIn(true);
-            setCookies(token);
-
-            // Optionally hydrate user from localStorage or fetch an endpoint like /api/me
-            const user = localStorage.getItem("authUser");
-            if (user) {
-                setAuthUser(JSON.parse(user));
+        async function fetchUser() {
+            const res = await fetch('/api/auth/me');
+            if (res.ok) {
+                const { user } = await res.json();
+                if (user) {
+                    setIsLoggedIn(true);
+                    setAuthUser({
+                        email: user.email,
+                        name: user.user_metadata?.display_name ?? '',
+                    });
+                }
             }
-        } else {
-            setIsLoggedIn(false);
-            setCookies(null);
-            setAuthUser(null);
-        }
-        */
-
-        // Temporary fallback logic while cookies are disabled
-        const user = localStorage.getItem("authUser");
-        if (user) {
-            setIsLoggedIn(true);
-            setAuthUser(JSON.parse(user));
-        } else {
-            setIsLoggedIn(false);
-            setAuthUser(null);
         }
 
+        fetchUser();
     }, []);
 
     return (
         <AppUtilsContext.Provider
-            value={{ isLoggedIn, setIsLoggedIn, authUser, cookies, setCookies }}
+            value={{
+                isLoggedIn,
+                setIsLoggedIn,
+                authUser,
+                cookies: null, // You can't access HttpOnly cookies from client
+                setCookies: () => {}, // Disable or remove this if not needed
+            }}
         >
             {children}
         </AppUtilsContext.Provider>

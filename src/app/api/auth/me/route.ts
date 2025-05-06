@@ -1,18 +1,12 @@
-// src/middleware.ts
+// src/app/api/auth/me/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const PUBLIC_PATHS = ['/', '/auth/login', '/favicon.ico'];
-
-export async function middleware(req: NextRequest) {
-    const pathname = req.nextUrl.pathname;
-
-    if (PUBLIC_PATHS.includes(pathname)) return NextResponse.next();
-
+export async function GET(req: NextRequest) {
     const token = req.cookies.get('sb-access-token')?.value;
 
     if (!token) {
-        return NextResponse.redirect(new URL('/auth/login', req.url));
+        return NextResponse.json({ user: null }, { status: 401 });
     }
 
     const supabase = createClient(
@@ -30,12 +24,8 @@ export async function middleware(req: NextRequest) {
     const { data, error } = await supabase.auth.getUser();
 
     if (error || !data?.user) {
-        return NextResponse.redirect(new URL('/auth/login', req.url));
+        return NextResponse.json({ user: null }, { status: 401 });
     }
 
-    return NextResponse.next();
+    return NextResponse.json({ user: data.user });
 }
-
-export const config = {
-    matcher: ['/auth/dashboard/:path*', '/api/private/:path*'],
-};
