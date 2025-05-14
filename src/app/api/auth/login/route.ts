@@ -1,38 +1,36 @@
 // src/app/api/auth/login/route.ts
-import { NextResponse } from 'next/server';
-import { checkRateLimit } from '@/utils/rateLimiter';
-import { loginUser } from '@/routes/handlers/auth/loginHandler';
+import { supabase } from '@/lib/supabase'
+import { NextResponse } from 'next/server'
 
 export async function POST(req: Request) {
-    const ip = req.headers.get('x-forwarded-for') || 'unknown';
+    const { email, password } = await req.json()
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
-    if (!checkRateLimit(ip)) {
-        return NextResponse.json({ message: 'Too many attempts' }, { status: 429 });
+    if (error || !data.session) {
+        return NextResponse.json({ error: error?.message || 'Login failed' }, { status: 401 })
     }
 
-    const { email, password } = await req.json();
-    const { error, token, user } = await loginUser(email, password);
+    const accessToken = data.session.access_token
+    const refreshToken = data.session.refresh_token
 
-    if (error || !token) {
-        return NextResponse.json({ message: error }, { status: 401 });
-    }
+    const res = NextResponse.json({ message: 'Logged in' })
 
-    const response = NextResponse.json({
-        message: 'Login successful',
-        user: {
-            email: user.email,
-            name: user.user_metadata?.display_name ?? 'No name',
-        },
-    });
-
-    // Set token as HttpOnly cookie
-    response.cookies.set('sb-access-token', token, {
+    // ✅ Use lowercase 'lax' instead of 'Lax'
+    res.cookies.set('access_token', accessToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
         path: '/',
-        maxAge: 60 * 60 * 24, // 1 day
-        sameSite: 'lax',
-    });
+        sameSite: 'lax', // <-- FIXED HERE
+        secure: true,
+        maxAge: 60 * 60 * 24 * 7,
+    })
 
-    return response;
+    res.cookies.set('refresh_token', refreshToken, {
+        httpOnly: true,
+        path: '/',
+        sameSite: 'lax', // <-- FIXED HERE
+        secure: true,
+        maxAge: 60 * 60 * 24 * 30,
+    })
+
+    return res
 }

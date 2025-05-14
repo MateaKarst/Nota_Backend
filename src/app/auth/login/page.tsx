@@ -1,4 +1,3 @@
-// src/app/auth/login/page.tsx
 "use client";
 
 import React, { useEffect } from "react";
@@ -22,7 +21,7 @@ const formSchema = yup.object().shape({
 });
 
 const Login = () => {
-    const { isLoggedIn, setIsLoggedIn } = useAppHook();
+    const { isLoggedIn, setIsLoggedIn, refreshUser } = useAppHook(); // ✅ use refreshUser
     const router = useRouter();
 
     const {
@@ -54,6 +53,7 @@ const Login = () => {
         if (!response.ok) {
             toast.error(result.message || "Invalid login details");
         } else {
+            await refreshUser(); // ✅ update context after login
             setIsLoggedIn(true);
             toast.success("User logged in successfully");
             router.push("/auth/dashboard");

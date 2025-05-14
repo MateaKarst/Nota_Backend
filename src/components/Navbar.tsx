@@ -1,4 +1,3 @@
-// src/components/Navbar.tsx
 "use client";
 
 import Link from "next/link";
@@ -6,17 +5,18 @@ import { useAppHook } from "@/context/AppUtils";
 import { useState } from "react";
 
 const Navbar = () => {
-    const { isLoggedIn, setIsLoggedIn } = useAppHook();
+    const { isLoggedIn, setIsLoggedIn, refreshUser } = useAppHook(); // ✅
     const [isLoggingOut, setIsLoggingOut] = useState(false);
 
     const handleLogout = async () => {
-        setIsLoggingOut(true);  
+        setIsLoggingOut(true);
         await fetch("/api/auth/logout", { method: "POST" });
-        setIsLoggedIn(false); 
-        setIsLoggingOut(false);  
-        window.location.href = "/";  
+        await refreshUser(); // ✅ update context after logout
+        setIsLoggedIn(false);
+        setIsLoggingOut(false);
+        window.location.href = "/"; // Optional: force nav
     };
-    
+
     return (
         <nav className="navbar navbar-expand-lg px-4" style={{ backgroundColor: "#343a40" }}>
             <Link className="navbar-brand fw-bold text-white" href="/">SupaNext</Link>
@@ -28,7 +28,7 @@ const Navbar = () => {
                     <button
                         className="btn btn-danger"
                         onClick={handleLogout}
-                        disabled={isLoggingOut} 
+                        disabled={isLoggingOut}
                     >
                         {isLoggingOut ? "Logging out..." : "Logout"}
                     </button>

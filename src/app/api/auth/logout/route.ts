@@ -1,6 +1,25 @@
 // src/app/api/auth/logout/route.ts
-import { logoutHandler } from "@/routes/handlers/auth/logoutHandler";
+import { NextResponse } from 'next/server'
 
 export async function POST() {
-    return logoutHandler();
+    const res = NextResponse.json({ message: 'Logged out' })
+
+    // Delete the cookies by setting them with a maxAge of 0
+    res.cookies.set('access_token', '', {
+        path: '/',
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: true,
+        maxAge: 0,
+    })
+
+    res.cookies.set('refresh_token', '', {
+        path: '/',
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: true,
+        maxAge: 0,
+    })
+
+    return res
 }

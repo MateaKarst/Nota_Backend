@@ -1,4 +1,3 @@
-// src/middleware.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
@@ -9,7 +8,7 @@ export async function middleware(req: NextRequest) {
 
     if (PUBLIC_PATHS.includes(pathname)) return NextResponse.next();
 
-    const token = req.cookies.get('sb-access-token')?.value;
+    const token = req.cookies.get('access_token')?.value;
 
     if (!token) {
         return NextResponse.redirect(new URL('/auth/login', req.url));

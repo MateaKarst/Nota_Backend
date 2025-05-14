@@ -1,31 +1,27 @@
-"use client"
+'use client'
 
-import React from 'react'
-import Footer from "@/components/Footer";
-import Navbar from "@/components/Navbar";
-import { useAppHook } from "@/context/AppUtils";
+import { useAppHook } from '@/context/AppUtils'
+import { useEffect } from 'react'
 
+export default function ProfilePage() {
+    const { authUser, isLoggedIn } = useAppHook()
 
-function Profile() {
-const {authUser} = useAppHook()
+    useEffect(() => {
+        if (!isLoggedIn || !authUser) return
+    }, [isLoggedIn, authUser])
+
+    if (!isLoggedIn || !authUser) {
+        return <p>You are not logged in.</p>
+    }
+    console.log(`context on authUser: ${authUser}`)
 
     return (
-        <>
-            <Navbar />
-            {authUser ? (
-                <div className="container mt-5">
-                    <h2>Profile</h2>
-                    <div className="card p-4 shadow-sm">
-                        <p><strong>Name:</strong> {authUser.name}</p>
-                        <p><strong>Email:</strong> {authUser.email}</p>
-                    </div>
-                </div>
-            ) : (
-                <p>No user logged in</p>
-            )}
-            <Footer />
-        </>
-    );
+        <div className="p-6 max-w-xl mx-auto">
+            <h1 className="text-2xl font-semibold mb-4">User Profile</h1>
+            <div className="bg-gray-100 p-4 rounded-lg shadow">
+                <p><strong>Email:</strong> {authUser.email}</p>
+                <p><strong>Name:</strong> {authUser.name}</p>
+            </div>
+        </div>
+    )
 }
-
-export default Profile
