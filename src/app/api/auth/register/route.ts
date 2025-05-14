@@ -1,3 +1,4 @@
+// src/app/api/auth/register/route.ts
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -42,7 +43,7 @@ export async function POST(req: Request) {
     // ✅ 2. Insert extra info into public.users
     console.log("📦 Inserting user profile into public.users...");
     const { error: errorInsert } = await supabaseAdmin
-        .from("users")
+        .from("user_details")
         .insert([{
             id: userId,
             email,
