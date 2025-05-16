@@ -1,0 +1,98 @@
+import { NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabase";
+import type { Instrument } from "@/utils/interfaceTypes";
+
+function parseFloatOrNull(value: FormDataEntryValue | null): number | null {
+    if (!value) return null;
+    const num = parseFloat(value.toString());
+    return isNaN(num) ? null : num;
+}
+
+function parseJSONOrNull<T>(value: FormDataEntryValue | null): T | null {
+    if (!value) return null;
+    try {
+        return JSON.parse(value.toString());
+    } catch {
+        return null;
+    }
+}
+
+export async function POST(req: Request) {
+    const form = await req.formData();
+
+    const file = form.get("file") as File | null;
+    const song_id = form.get("song_id")?.toString();
+
+    if (!file || !song_id) {
+        return NextResponse.json({ message: "Missing file or song_id" }, { status: 400 });
+    }
+
+    const filename = `${crypto.randomUUID()}-${file.name}`;
+
+    const { error: uploadError } = await supabaseAdmin.storage
+        .from("tracks")
+        .upload(filename, file, {
+            contentType: file.type,
+            upsert: true,
+        });
+
+    if (uploadError) {
+        return NextResponse.json({ message: "Error uploading file", error: uploadError.message }, { status: 500 });
+    }
+
+    const publicUrl = supabaseAdmin.storage.from("tracks").getPublicUrl(filename).data.publicUrl;
+
+    let instruments: Instrument[] | null = null;
+    const instrumentsRaw = form.get("instruments");
+    if (instrumentsRaw) {
+        try {
+            const parsed = JSON.parse(instrumentsRaw.toString());
+            if (Array.isArray(parsed)) instruments = parsed;
+            else return NextResponse.json({ message: "Invalid instruments array" }, { status: 400 });
+        } catch {
+            return NextResponse.json({ message: "Invalid instruments JSON" }, { status: 400 });
+        }
+    }
+
+    const trackData = {
+        song_id,
+        url: publicUrl,
+        storage_path: filename,
+        start_position: parseFloatOrNull(form.get("start_position")) ?? 0,
+        start_cue: parseFloatOrNull(form.get("start_cue")),
+        end_cue: parseFloatOrNull(form.get("end_cue")),
+        fade_in_end: parseFloatOrNull(form.get("fade_in_end")),
+        fade_out_start: parseFloatOrNull(form.get("fade_out_start")),
+        volume: parseFloatOrNull(form.get("volume")) ?? 1.0,
+        draggable: form.get("draggable")?.toString() === "false" ? false : true,
+        envelope: parseJSONOrNull(form.get("envelope")),
+        intro: parseJSONOrNull(form.get("intro")),
+        markers: parseJSONOrNull(form.get("markers")),
+        wave_color: form.get("wave_color")?.toString() || "#2D2D2D",
+        progress_color: form.get("progress_color")?.toString() || "#7C7C7C",
+        instruments,
+    };
+
+    const { data: track, error } = await supabaseAdmin
+        .from("tracks")
+        .insert([trackData])
+        .select()
+        .single();
+
+    if (error) {
+        return NextResponse.json({ message: "Error saving track", error: error.message }, { status: 500 });
+    }
+
+    // Fetch the related song
+    const { data: song, error: songError } = await supabaseAdmin
+        .from("songs")
+        .select("*")
+        .eq("id", song_id)
+        .single();
+
+    if (songError) {
+        return NextResponse.json({ message: "Track created, but failed to fetch song", track, error: songError.message }, { status: 207 });
+    }
+
+    return NextResponse.json({ message: "Track created", track, song }, { status: 200 });
+}

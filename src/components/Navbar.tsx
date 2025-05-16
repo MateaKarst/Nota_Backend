@@ -24,6 +24,7 @@ const Navbar = () => {
             {isLoggedIn ? (
                 <div className="ms-auto">
                     <Link className="me-3 text-white text-decoration-none" href="/auth/dashboard">Dashboard</Link>
+                    <Link className="me-3 text-white text-decoration-none" href="/auth/tester">Tester</Link>
                     <Link className="me-3 text-white text-decoration-none" href="/auth/profile">Profile</Link>
                     <button
                         className="btn btn-danger"
