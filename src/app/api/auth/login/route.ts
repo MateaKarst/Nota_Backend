@@ -11,22 +11,11 @@ export async function POST(req: Request) {
     }
 
     const accessToken = data.session.access_token
+    console.log(`accessToken on login route: ${accessToken}`)
     const refreshToken = data.session.refresh_token
-    const user = data.user
+    console.log(`refreshToken on login route: ${refreshToken}`)
 
-    const res = NextResponse.json({
-        message: 'Logged in successfully',
-        user: {
-            email: user?.email,
-            id: user?.id,
-            full_name: user?.user_metadata?.full_name, // Assuming you have a full_name field in the metadata
-            // Add other user properties you want to send here
-        },
-        tokens: {
-            access_token: accessToken,
-            refresh_token: refreshToken
-        }
-    })
+    const res = NextResponse.json({ message: 'Logged in' })
 
     // ✅ Use lowercase 'lax' instead of 'Lax'
     res.cookies.set('access_token', accessToken, {

@@ -1,45 +1,35 @@
+// src/app/api/me/route.ts
+import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
 
-export async function GET(req: Request) {
-    // Try getting the cookies first
+export async function GET() {
     const cookieStore = await cookies()
     const access_token = cookieStore.get('access_token')?.value
     const refresh_token = cookieStore.get('refresh_token')?.value
 
     if (!access_token || !refresh_token) {
-        // If cookies are not available, look for Authorization header with Bearer token
-        const authHeader = req.headers.get('Authorization')
-        if (authHeader && authHeader.startsWith('Bearer ')) {
-            const token = authHeader.substring(7) // Extract token after "Bearer "
-            // Try using the provided Bearer token
-            const { data: { user }, error } = await supabase.auth.getUser(token)
-
-            if (error || !user) {
-                return NextResponse.json({ user: null }, { status: 401 })
-            }
-
-            return NextResponse.json({
-                user: {
-                    email: user.email,
-                    name: user.user_metadata.full_name,
-                    token: token,
-                },
-            })
-        }
-
-        // If no cookies or authorization header found, return unauthorized
         return NextResponse.json({ user: null }, { status: 401 })
     }
 
-    // Try using the access token from cookies
+    let supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+            auth: {
+                persistSession: false,
+                autoRefreshToken: false,
+            },
+        }
+    )
+
+    // Try using access token
     const {
         data: { user },
         error,
     } = await supabase.auth.getUser(access_token)
 
-    // If access_token is invalid/expired, try refreshing it
+    // If access_token is invalid/expired, try refreshing
     if (error || !user) {
         const {
             data: refreshData,
@@ -54,6 +44,16 @@ export async function GET(req: Request) {
         const newAccessToken = refreshData.session.access_token
         const newRefreshToken = refreshData.session.refresh_token
 
+        supabase = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            {
+                auth: {
+                    persistSession: false,
+                    autoRefreshToken: false,
+                },
+            }
+        )
 
         const {
             data: { user: refreshedUser },
@@ -92,7 +92,7 @@ export async function GET(req: Request) {
         return res
     }
 
-    // If user was valid initially (using access_token from cookies)
+    // If user was valid initially
     return NextResponse.json({
         user: {
             email: user.email,
