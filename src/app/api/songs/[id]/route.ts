@@ -1,59 +1,93 @@
+// src/app/api/songs/[id]/route.ts
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
-import { Song } from "@/utils/interfaceTypes";
+import { addCorsHeaders } from "@/utils/cors";
+
+export async function GET(_: Request, { params }: { params: { id: string } }) {
+    const { id } = params;
+
+    const { data: song, error: songError } = await supabaseAdmin
+        .from("songs")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+    if (songError) {
+        return NextResponse.json({ message: "Error fetching song", error: songError.message }, { status: 500 });
+    }
+
+    const { data: tracks, error: tracksError } = await supabaseAdmin
+        .from("tracks")
+        .select("*")
+        .eq("song_id", id);
+
+    if (tracksError) {
+        return addCorsHeaders(
+            NextResponse.json(
+                { message: "Error fetching tracks", error: tracksError.message },
+                { status: 500 }
+            )
+        );
+    }
+
+    return addCorsHeaders(
+        NextResponse.json({ ...song, tracks }, { status: 200 })
+    );
+}
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
     const songId = params.id;
-    const body = await req.json();
+    const form = await req.formData();
 
-    const allowedFields: (keyof Song)[] = [
-        "title",
-        "description",
-        "cover_image",
-        "compiled_path",
-        "genres",
-    ];
+    const file = form.get("file") as File | null;
 
-    const updateData: Partial<Song> = {};
-
-    for (const key of allowedFields) {
-        if (key in body) {
-            const value = body[key];
-
-            if (key === "genres" && value !== undefined) {
-                const isValidGenreArray =
-                    Array.isArray(value) && value.every((g) =>
-                        ["rock", "pop", "jazz", "classical", "hiphop", "electronic", "country"].includes(g)
-                    );
-
-                if (!isValidGenreArray) {
-                    return NextResponse.json({ message: "Invalid genres array" }, { status: 400 });
-                }
-            } else if (typeof value !== "string" && value !== null && value !== undefined) {
-                return NextResponse.json(
-                    { message: `Invalid type for ${key}, expected string, null, or array (for genres)` },
-                    { status: 400 }
-                );
-            }
-
-            updateData[key] = value; 
-        }
+    if (!file) {
+        return addCorsHeaders(
+            NextResponse.json({ message: "Missing file" }, { status: 400 })
+        );
     }
 
-    if (Object.keys(updateData).length === 0) {
-        return NextResponse.json({ message: "No valid fields provided for update" }, { status: 400 });
-    }
+    const filename = `${crypto.randomUUID()}-${file.name}`;
 
-    const { data, error } = await supabaseAdmin
+    const { error: uploadError } = await supabaseAdmin.storage
         .from("songs")
-        .update(updateData)
+        .upload(filename, file, {
+            contentType: file.type,
+            upsert: true,
+        });
+
+    if (uploadError) {
+        return addCorsHeaders(
+            NextResponse.json({ message: "Error uploading file", error: uploadError.message }, { status: 500 })
+        );
+    }
+
+    const publicUrlData = supabaseAdmin.storage
+        .from("songs")
+        .getPublicUrl(filename);
+
+    const publicUrl = publicUrlData.data.publicUrl;
+
+    if (!publicUrl) {
+        return addCorsHeaders(
+            NextResponse.json({ message: "Error getting public URL" }, { status: 500 })
+        );
+    }
+
+    const { data, error: updateError } = await supabaseAdmin
+        .from("songs")
+        .update({ compiled_path: publicUrl })
         .eq("id", songId)
         .select()
         .single();
 
-    if (error) {
-        return NextResponse.json({ message: "Error updating song", error: error.message }, { status: 500 });
+    if (updateError) {
+        return addCorsHeaders(
+            NextResponse.json({ message: "Error updating song compiled_path", error: updateError.message }, { status: 500 })
+        );
     }
 
-    return NextResponse.json(data, { status: 200 });
+    return addCorsHeaders(
+        NextResponse.json({ message: "Compiled MP3 uploaded and song updated", data }, { status: 200 })
+    );
 }

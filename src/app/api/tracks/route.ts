@@ -1,6 +1,8 @@
+// src\app\api\tracks\route.ts
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import type { Instrument } from "@/utils/interfaceTypes";
+import { addCorsHeaders } from "@/utils/cors";
 
 function parseFloatOrNull(value: FormDataEntryValue | null): number | null {
     if (!value) return null;
@@ -24,7 +26,9 @@ export async function POST(req: Request) {
     const song_id = form.get("song_id")?.toString();
 
     if (!file || !song_id) {
-        return NextResponse.json({ message: "Missing file or song_id" }, { status: 400 });
+        return addCorsHeaders(
+            NextResponse.json({ message: "Missing file or song_id" }, { status: 400 })
+        );
     }
 
     const filename = `${crypto.randomUUID()}-${file.name}`;
@@ -37,7 +41,9 @@ export async function POST(req: Request) {
         });
 
     if (uploadError) {
-        return NextResponse.json({ message: "Error uploading file", error: uploadError.message }, { status: 500 });
+        return addCorsHeaders(
+            NextResponse.json({ message: "Error uploading file", error: uploadError.message }, { status: 500 })
+        );
     }
 
     const publicUrl = supabaseAdmin.storage.from("tracks").getPublicUrl(filename).data.publicUrl;
@@ -48,9 +54,14 @@ export async function POST(req: Request) {
         try {
             const parsed = JSON.parse(instrumentsRaw.toString());
             if (Array.isArray(parsed)) instruments = parsed;
-            else return NextResponse.json({ message: "Invalid instruments array" }, { status: 400 });
+            else
+                return addCorsHeaders(
+                    NextResponse.json({ message: "Invalid instruments array" }, { status: 400 })
+                );
         } catch {
-            return NextResponse.json({ message: "Invalid instruments JSON" }, { status: 400 });
+            return addCorsHeaders(
+                NextResponse.json({ message: "Invalid instruments JSON" }, { status: 400 })
+            );
         }
     }
 
@@ -80,7 +91,9 @@ export async function POST(req: Request) {
         .single();
 
     if (error) {
-        return NextResponse.json({ message: "Error saving track", error: error.message }, { status: 500 });
+        return addCorsHeaders(
+            NextResponse.json({ message: "Error saving track", error: error.message }, { status: 500 })
+        );
     }
 
     // Fetch the related song
@@ -91,8 +104,12 @@ export async function POST(req: Request) {
         .single();
 
     if (songError) {
-        return NextResponse.json({ message: "Track created, but failed to fetch song", track, error: songError.message }, { status: 207 });
+        return addCorsHeaders(
+            NextResponse.json({ message: "Track created, but failed to fetch song", track, error: songError.message }, { status: 207 })
+        );
     }
 
-    return NextResponse.json({ message: "Track created", track, song }, { status: 200 });
+    return addCorsHeaders(
+        NextResponse.json({ message: "Track created", track, song }, { status: 200 })
+    );
 }
