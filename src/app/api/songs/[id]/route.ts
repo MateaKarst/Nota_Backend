@@ -1,15 +1,19 @@
 // src/app/api/songs/[id]/route.ts
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { addCorsHeaders } from "@/utils/cors";
 
-export async function GET(_: Request, { params }: { params: { id: string } }) {
-    const { id } = params;
+type Params = {
+    params: { id: string };
+};
+
+export async function GET(req: NextRequest, { params }: Params) {
+    const songId = params.id;
 
     const { data: song, error: songError } = await supabaseAdmin
         .from("songs")
         .select("*")
-        .eq("id", id)
+        .eq("id", songId)
         .single();
 
     if (songError) {
@@ -19,7 +23,7 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
     const { data: tracks, error: tracksError } = await supabaseAdmin
         .from("tracks")
         .select("*")
-        .eq("song_id", id);
+        .eq("song_id", songId);
 
     if (tracksError) {
         return addCorsHeaders(
@@ -35,8 +39,8 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
     );
 }
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
-    const songId = params.id;
+export async function PATCH(req: NextRequest, context: Params) {
+    const songId = context.params.id;
     const form = await req.formData();
 
     const file = form.get("file") as File | null;

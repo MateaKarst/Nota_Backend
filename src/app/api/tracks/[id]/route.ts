@@ -1,10 +1,14 @@
 // src/app/api/tracks/[id]/route.ts
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import type { Track } from "@/utils/interfaceTypes";
 import { addCorsHeaders } from "@/utils/cors";
 
-export async function GET(_: Request, { params }: { params: { id: string } }) {
+type Params = {
+    params: { id: string };
+};
+
+export async function GET(req: NextRequest, { params }: Params) {
     const trackId = params.id;
 
     const { data: track, error: trackError } = await supabaseAdmin
@@ -36,8 +40,8 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
     );
 }
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
-    const id = params.id;
+export async function PATCH(req: NextRequest, context: Params) {
+    const trackId = context.params.id;
     const body: Partial<Track> = await req.json();
 
     const allowedFields: (keyof Track)[] = [
@@ -105,7 +109,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const { data: updatedTrack, error: updateError } = await supabaseAdmin
         .from("tracks")
         .update(updateData)
-        .eq("id", id)
+        .eq("id", trackId)
         .select()
         .single();
 
