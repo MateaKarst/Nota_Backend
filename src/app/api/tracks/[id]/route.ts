@@ -5,10 +5,10 @@ import type { Track } from "@/utils/interfaceTypes";
 import { addCorsHeaders } from "@/utils/cors";
 
 export async function GET(
-    req: NextRequest,
-    context: { params: { id: string } }
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
 ) {
-    const trackId = context.params.id;
+    const trackId = (await params).id;
 
     const { data: track, error: trackError } = await supabaseAdmin
         .from("tracks")
@@ -46,11 +46,11 @@ export async function GET(
 }
 
 export async function PATCH(
-    req: NextRequest,
-    context: { params: { id: string } }
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
 ) {
-    const trackId = context.params.id;
-    const body: Partial<Track> = await req.json();
+    const trackId = (await params).id
+    const body: Partial<Track> = await request.json();
 
     const allowedFields: (keyof Track)[] = [
         "url",

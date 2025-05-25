@@ -4,10 +4,10 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { addCorsHeaders } from "@/utils/cors";
 
 export async function GET(
-    req: NextRequest,
-    context: { params: { id: string } }
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
 ) {
-    const songId = context.params.id;
+    const songId = (await params).id;
 
     const { data: song, error: songError } = await supabaseAdmin
         .from("songs")
@@ -42,11 +42,11 @@ export async function GET(
 }
 
 export async function PATCH(
-    req: NextRequest,
-    context: { params: { id: string } }
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
 ) {
-    const songId = context.params.id;
-    const form = await req.formData();
+    const songId = (await params).id
+    const form = await request.formData();
 
     const file = form.get("file") as File | null;
 
