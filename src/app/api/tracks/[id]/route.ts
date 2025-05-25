@@ -4,12 +4,11 @@ import { supabaseAdmin } from "@/lib/supabase";
 import type { Track } from "@/utils/interfaceTypes";
 import { addCorsHeaders } from "@/utils/cors";
 
-type Params = {
-    params: { id: string };
-};
-
-export async function GET(req: NextRequest, { params }: Params) {
-    const trackId = params.id;
+export async function GET(
+    req: NextRequest,
+    context: { params: { id: string } }
+) {
+    const trackId = context.params.id;
 
     const { data: track, error: trackError } = await supabaseAdmin
         .from("tracks")
@@ -19,7 +18,10 @@ export async function GET(req: NextRequest, { params }: Params) {
 
     if (trackError) {
         return addCorsHeaders(
-            NextResponse.json({ message: "Error fetching track", error: trackError.message }, { status: 500 })
+            NextResponse.json(
+                { message: "Error fetching track", error: trackError.message },
+                { status: 500 }
+            )
         );
     }
 
@@ -31,7 +33,10 @@ export async function GET(req: NextRequest, { params }: Params) {
 
     if (songError) {
         return addCorsHeaders(
-            NextResponse.json({ message: "Error fetching song", error: songError.message }, { status: 500 })
+            NextResponse.json(
+                { message: "Error fetching song", error: songError.message },
+                { status: 500 }
+            )
         );
     }
 
@@ -40,7 +45,10 @@ export async function GET(req: NextRequest, { params }: Params) {
     );
 }
 
-export async function PATCH(req: NextRequest, context: Params) {
+export async function PATCH(
+    req: NextRequest,
+    context: { params: { id: string } }
+) {
     const trackId = context.params.id;
     const body: Partial<Track> = await req.json();
 
@@ -115,7 +123,10 @@ export async function PATCH(req: NextRequest, context: Params) {
 
     if (updateError) {
         return addCorsHeaders(
-            NextResponse.json({ message: "Error updating track", error: updateError.message }, { status: 500 })
+            NextResponse.json(
+                { message: "Error updating track", error: updateError.message },
+                { status: 500 }
+            )
         );
     }
 
@@ -127,12 +138,21 @@ export async function PATCH(req: NextRequest, context: Params) {
 
     if (songError) {
         return addCorsHeaders(
-            NextResponse.json({ message: "Track updated, but error fetching song", track: updatedTrack, error: songError.message }, { status: 207 })
+            NextResponse.json(
+                {
+                    message: "Track updated, but error fetching song",
+                    track: updatedTrack,
+                    error: songError.message,
+                },
+                { status: 207 }
+            )
         );
     }
 
     return addCorsHeaders(
-        NextResponse.json({ message: "Track updated", track: updatedTrack, song }, { status: 200 })
+        NextResponse.json(
+            { message: "Track updated", track: updatedTrack, song },
+            { status: 200 }
+        )
     );
 }
-

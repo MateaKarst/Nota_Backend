@@ -3,12 +3,11 @@ import { NextResponse, NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { addCorsHeaders } from "@/utils/cors";
 
-type Params = {
-    params: { id: string };
-};
-
-export async function GET(req: NextRequest, { params }: Params) {
-    const songId = params.id;
+export async function GET(
+    req: NextRequest,
+    context: { params: { id: string } }
+) {
+    const songId = context.params.id;
 
     const { data: song, error: songError } = await supabaseAdmin
         .from("songs")
@@ -17,7 +16,10 @@ export async function GET(req: NextRequest, { params }: Params) {
         .single();
 
     if (songError) {
-        return NextResponse.json({ message: "Error fetching song", error: songError.message }, { status: 500 });
+        return NextResponse.json(
+            { message: "Error fetching song", error: songError.message },
+            { status: 500 }
+        );
     }
 
     const { data: tracks, error: tracksError } = await supabaseAdmin
@@ -39,7 +41,10 @@ export async function GET(req: NextRequest, { params }: Params) {
     );
 }
 
-export async function PATCH(req: NextRequest, context: Params) {
+export async function PATCH(
+    req: NextRequest,
+    context: { params: { id: string } }
+) {
     const songId = context.params.id;
     const form = await req.formData();
 
@@ -62,7 +67,10 @@ export async function PATCH(req: NextRequest, context: Params) {
 
     if (uploadError) {
         return addCorsHeaders(
-            NextResponse.json({ message: "Error uploading file", error: uploadError.message }, { status: 500 })
+            NextResponse.json(
+                { message: "Error uploading file", error: uploadError.message },
+                { status: 500 }
+            )
         );
     }
 
@@ -87,11 +95,20 @@ export async function PATCH(req: NextRequest, context: Params) {
 
     if (updateError) {
         return addCorsHeaders(
-            NextResponse.json({ message: "Error updating song compiled_path", error: updateError.message }, { status: 500 })
+            NextResponse.json(
+                {
+                    message: "Error updating song compiled_path",
+                    error: updateError.message,
+                },
+                { status: 500 }
+            )
         );
     }
 
     return addCorsHeaders(
-        NextResponse.json({ message: "Compiled MP3 uploaded and song updated", data }, { status: 200 })
+        NextResponse.json(
+            { message: "Compiled MP3 uploaded and song updated", data },
+            { status: 200 }
+        )
     );
 }
