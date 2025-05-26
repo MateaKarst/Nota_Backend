@@ -72,7 +72,7 @@ export async function GET() {
             },
         })
 
-        // 🔄 Set new tokens as cookies
+        // Set new tokens as cookies
         res.cookies.set('access_token', newAccessToken, {
             httpOnly: true,
             path: '/',

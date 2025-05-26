@@ -26,6 +26,13 @@ interface TrackResponse {
     error?: string;
 }
 
+interface TrackEditResponse {
+    message: string;
+    track?: any;
+    song?: any;
+    error?: string;
+}
+
 const Tester = () => {
     // Song state
     const [title, setTitle] = useState("");
@@ -40,6 +47,23 @@ const Tester = () => {
     // Responses
     const [songResponse, setSongResponse] = useState<SongResponse | null>(null);
     const [trackResponse, setTrackResponse] = useState<TrackResponse | null>(null);
+    const [editResponse, setEditResponse] = useState<any | null>(null);
+
+    //Edit song
+    const [editTitle, setEditTitle] = useState("");
+    const [editDescription, setEditDescription] = useState("");
+    const [editCoverImage, setEditCoverImage] = useState("");
+
+    // Track Edit states
+    const [editTrackId, setEditTrackId] = useState("");
+    const [editTrackData, setEditTrackData] = useState(`{
+    "url": "https://example.com/new-audio.mp3",
+    "volume": 0.8,
+    "instruments": ["guitar", "bass"]
+    }`);
+
+    const [editTrackResponse, setEditTrackResponse] = useState<TrackEditResponse | null>(null);
+
 
     const createSong = async () => {
         if (!title || !userId) {
@@ -57,9 +81,22 @@ const Tester = () => {
         setSongResponse(data);
 
         if (data.song?.id) {
-            setSongId(data.song.id);
+            const newSongId = data.song.id;
+            setSongId(newSongId);
         }
+
+        await fetch(`/api/songs/${songId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                title: "New Title",
+                description: "Updated description",
+                cover_image: "https://example.com/image.jpg"
+            })
+        });
+
     };
+
 
     const uploadTrack = async () => {
         if (!songId || !file) {
@@ -75,7 +112,7 @@ const Tester = () => {
         const formData = new FormData();
         formData.append("file", file);
         formData.append("song_id", songId);
-        formData.append("start_position", "0"); // or customize as needed
+        formData.append("start_position", "0");
 
         const res = await fetch("/api/tracks", {
             method: "POST",
@@ -85,6 +122,56 @@ const Tester = () => {
         const data = await res.json();
         setTrackResponse(data);
     };
+
+    const editSong = async () => {
+        if (!songId) {
+            alert("Missing song ID.");
+            return;
+        }
+
+        const res = await fetch(`/api/songs/${songId}`, {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                title: editTitle,
+                description: editDescription,
+                cover_image: editCoverImage,
+            }),
+        });
+
+        const data = await res.json();
+        setEditResponse(data);
+    };
+
+    const editTrack = async () => {
+    if (!editTrackId) {
+      alert("Please enter the Track ID to edit.");
+      return;
+    }
+
+    let parsedBody;
+    try {
+      parsedBody = JSON.parse(editTrackData);
+    } catch (err) {
+      alert("Invalid JSON data.");
+      return;
+    }
+
+    const res = await fetch(`/api/tracks/${editTrackId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(parsedBody),
+    });
+
+    const data = await res.json();
+    setEditTrackResponse(data);
+    };
+
+
 
     return (
         <div style={{ padding: 20, maxWidth: 600 }}>
@@ -123,6 +210,63 @@ const Tester = () => {
                     {JSON.stringify(trackResponse, null, 2)}
                 </pre>
             )}
+
+            <hr style={{ margin: "30px 0" }} />
+            <h2>Edit Song</h2>
+            <input
+                placeholder="New Title"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+            />
+            <br />
+            <input
+                placeholder="Song ID"
+                value={songId}
+                onChange={e => setSongId(e.target.value)}
+            />
+            <br />
+            <input
+                placeholder="New Description"
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+            />
+            <br />
+            <input
+                placeholder="New Cover Image URL"
+                value={editCoverImage}
+                onChange={(e) => setEditCoverImage(e.target.value)}
+            />
+            <br />
+            <button onClick={editSong} style={{ marginTop: 10 }}>Edit Song</button>
+
+            {editResponse && (
+                <pre style={{ background: "#f3f3f3", padding: 10, marginTop: 10 }}>
+                    {JSON.stringify(editResponse, null, 2)}
+                </pre>
+            )}
+
+            <hr style={{ margin: "30px 0" }} />
+      <h2>Edit Track</h2>
+      <input
+        placeholder="Track ID"
+        value={editTrackId}
+        onChange={(e) => setEditTrackId(e.target.value)}
+        style={{ width: "100%", marginBottom: 10 }}
+      />
+      <textarea
+        value={editTrackData}
+        onChange={(e) => setEditTrackData(e.target.value)}
+        rows={10}
+        style={{ width: "100%", fontFamily: "monospace", marginBottom: 10 }}
+      />
+      <br />
+      <button onClick={editTrack}>Edit Track</button>
+
+      {editTrackResponse && (
+        <pre style={{ background: "#f3f3f3", padding: 10, marginTop: 10, whiteSpace: "pre-wrap" }}>
+          {JSON.stringify(editTrackResponse, null, 2)}
+        </pre>
+      )}
         </div>
     );
 };

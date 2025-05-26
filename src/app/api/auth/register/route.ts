@@ -26,7 +26,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ message: "Invalid email format." }, { status: 400 });
     }
 
-    // ✅ 1. Create user in Supabase Auth
+    //  Create user in Supabase Auth
     console.log("🛠️ Creating user in Supabase Auth...");
     const { data: userAuth, error: errorAuth } = await supabaseAdmin.auth.signUp({
         email,
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
     const userId = userAuth.user.id;
     console.log("✅ Auth user created with ID:", userId);
 
-    // ✅ 2. Try uploading avatar (optional)
+    //  Try uploading avatar (optional)
     let avatar_url = null;
     try {
         if (avatar) {

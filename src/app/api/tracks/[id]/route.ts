@@ -76,8 +76,6 @@ export async function PATCH(
         "drums",
         "keyboard",
         "vocals",
-        "synthesizer",
-        "saxophone",
     ];
 
     const updateData: Partial<Track> = {};
