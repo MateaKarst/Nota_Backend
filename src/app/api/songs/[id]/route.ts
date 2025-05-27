@@ -41,13 +41,20 @@ export async function GET(
     );
 }
 
+interface SongUpdateData {
+    title?: string;
+    description?: string;
+    cover_image?: string;
+    compiled_path?: string;
+}
+
 export async function PATCH(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     const songId = (await params).id;
 
-    let updateData: any = {};
+    let updateData: SongUpdateData = {};
 
     // Detect if it's formData or JSON
     const contentType = request.headers.get("content-type") || "";
@@ -75,10 +82,9 @@ export async function PATCH(
             updateData.compiled_path = publicUrl;
         }
 
-        // Optional other metadata fields
         ["title", "description", "cover_image"].forEach(key => {
             const val = form.get(key);
-            if (val) updateData[key] = val;
+            if (val) updateData[key as keyof SongUpdateData] = val as string;
         });
     }
 
