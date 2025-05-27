@@ -62,25 +62,52 @@ export async function POST(
     );
 }
 
-export async function DELETE(request: NextRequest){
-    const body = await request.json();
-    const { user_id, connection_id } = body;
+export async function DELETE(
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    const id = (await params).id;
 
-    if (!user_id || !connection_id) {
+    if (!id) {
         return addCorsHeaders(
-            NextResponse.json({message: "Missing user_id or connection_id" }, { status: 400})
-        )
+            NextResponse.json({ message: "Missing connection id" }, { status: 400 })
+        );
     }
-    
-    const { error } = await supabaseAdmin
+
+    // Check if connection exists first
+    const { data: existingConnection, error: fetchError } = await supabaseAdmin
+        .from("connections")
+        .select("id")
+        .eq("id", id)
+        .single();
+
+    if (fetchError) {
+        return addCorsHeaders(
+            NextResponse.json(
+                { message: "Error checking connection existence", error: fetchError.message },
+                { status: 500 }
+            )
+        );
+    }
+
+    if (!existingConnection) {
+        return addCorsHeaders(
+            NextResponse.json({ message: "Connection not found" }, { status: 404 })
+        );
+    }
+
+    // Proceed to delete
+    const { error: deleteError } = await supabaseAdmin
         .from("connections")
         .delete()
-        .eq("user_id", user_id)
-        .eq("connection_id", connection_id);
+        .eq("id", id);
 
-    if (error) {
+    if (deleteError) {
         return addCorsHeaders(
-            NextResponse.json({ message: "Error deleting connection", error: error.message }, { status: 500 })
+            NextResponse.json(
+                { message: "Error deleting connection", error: deleteError.message },
+                { status: 500 }
+            )
         );
     }
 
