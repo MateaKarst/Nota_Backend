@@ -61,3 +61,30 @@ export async function POST(
         NextResponse.json(data, { status: 200 })
     );
 }
+
+export async function DELETE(request: NextRequest){
+    const body = await request.json();
+    const { user_id, connection_id } = body;
+
+    if (!user_id || !connection_id) {
+        return addCorsHeaders(
+            NextResponse.json({message: "Missing user_id or connection_id" }, { status: 400})
+        )
+    }
+    
+    const { error } = await supabaseAdmin
+        .from("connections")
+        .delete()
+        .eq("user_id", user_id)
+        .eq("connection_id", connection_id);
+
+    if (error) {
+        return addCorsHeaders(
+            NextResponse.json({ message: "Error deleting connection", error: error.message }, { status: 500 })
+        );
+    }
+
+    return addCorsHeaders(
+        NextResponse.json({ message: "Connection deleted successfully" }, { status: 200 })
+    );
+}
