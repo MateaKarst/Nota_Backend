@@ -61,3 +61,35 @@ export async function POST(
         NextResponse.json(data, { status: 200 })
     );
 }
+
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const user_id = params.id;
+
+  if (!user_id) {
+    return addCorsHeaders(
+      NextResponse.json({ message: "Missing user_id" }, { status: 400 })
+    );
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("connections")
+    .select("*")
+    .eq("user_id", user_id);
+
+  if (error) {
+    return addCorsHeaders(
+      NextResponse.json(
+        { message: "Error fetching connections", error: error.message },
+        { status: 500 }
+      )
+    );
+  }
+
+  return addCorsHeaders(
+    NextResponse.json(data, { status: 200 })
+  );
+}
