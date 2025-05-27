@@ -41,13 +41,20 @@ export async function GET(
     );
 }
 
+type SongUpdateData = {
+    title?: string;
+    description?: string;
+    cover_image?: string;
+    compiled_path?: string;
+};
+
 export async function PATCH(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     const songId = (await params).id;
 
-    let updateData: any = {};
+    let updateData: SongUpdateData = {};
 
     // Detect if it's formData or JSON
     const contentType = request.headers.get("content-type") || "";
@@ -76,9 +83,12 @@ export async function PATCH(
         }
 
         // Optional other metadata fields
-        ["title", "description", "cover_image"].forEach(key => {
+        const fields: (keyof SongUpdateData)[] = ["title", "description", "cover_image"];
+        fields.forEach((key) => {
             const val = form.get(key);
-            if (val) updateData[key] = val;
+            if (typeof val === "string") {
+                updateData[key] = val;
+            }
         });
     }
 
