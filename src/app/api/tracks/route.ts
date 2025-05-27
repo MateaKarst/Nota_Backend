@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import type { Instrument } from "@/utils/interfaceTypes";
 import { addCorsHeaders } from "@/utils/cors";
-import { parseBuffer } from "music-metadata"; //checks duration of track
+import { parseBuffer } from "music-metadata"; 
 
 function parseFloatOrNull(value: FormDataEntryValue | null): number | null {
   if (!value) return null;
