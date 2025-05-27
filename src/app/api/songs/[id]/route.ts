@@ -41,12 +41,12 @@ export async function GET(
     );
 }
 
-interface SongUpdateData {
+type SongUpdateData = {
     title?: string;
     description?: string;
     cover_image?: string;
     compiled_path?: string;
-}
+};
 
 export async function PATCH(
     request: NextRequest,
@@ -82,9 +82,13 @@ export async function PATCH(
             updateData.compiled_path = publicUrl;
         }
 
-        ["title", "description", "cover_image"].forEach(key => {
+        // Optional other metadata fields
+        const fields: (keyof SongUpdateData)[] = ["title", "description", "cover_image"];
+        fields.forEach((key) => {
             const val = form.get(key);
-            if (val) updateData[key as keyof SongUpdateData] = val as string;
+            if (typeof val === "string") {
+                updateData[key] = val;
+            }
         });
     }
 
