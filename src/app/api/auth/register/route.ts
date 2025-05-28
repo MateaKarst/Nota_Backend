@@ -1,8 +1,12 @@
-// src/app/api/auth/register/route.ts
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { addCorsHeaders, handlePreflight } from "@/utils/cors";
 
-export async function POST(req: Request) {
+export async function OPTIONS(request: Request) {
+    return handlePreflight(request);
+}
+
+export async function POST(request: Request) {
     console.log("⚡ POST /api/auth/register called");
 
     const {
@@ -12,7 +16,7 @@ export async function POST(req: Request) {
         last_name,
         avatar,
         profile_description,
-    } = await req.json();
+    } = await request.json();
 
     console.log("📩 Received data:", {
         email,
@@ -23,10 +27,10 @@ export async function POST(req: Request) {
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-        return NextResponse.json({ message: "Invalid email format." }, { status: 400 });
+        const res = NextResponse.json({ message: "Invalid email format." }, { status: 400 });
+        return addCorsHeaders(request, res);
     }
 
-    //  Create user in Supabase Auth
     console.log("🛠️ Creating user in Supabase Auth...");
     const { data: userAuth, error: errorAuth } = await supabaseAdmin.auth.signUp({
         email,
@@ -35,16 +39,16 @@ export async function POST(req: Request) {
 
     if (errorAuth || !userAuth.user?.id) {
         console.error("❌ Error creating auth user:", errorAuth?.message);
-        return NextResponse.json(
+        const res = NextResponse.json(
             { message: "Failed to create auth user", error: errorAuth?.message },
             { status: 400 }
         );
+        return addCorsHeaders(request, res);
     }
 
     const userId = userAuth.user.id;
     console.log("✅ Auth user created with ID:", userId);
 
-    //  Try uploading avatar (optional)
     let avatar_url = null;
     try {
         if (avatar) {
@@ -52,11 +56,10 @@ export async function POST(req: Request) {
 
             const base64Data = avatar.split(",")[1];
             const buffer = Buffer.from(base64Data, "base64");
-
             const filePath = `avatars/${userId}-${Date.now()}.png`;
 
             const { error: uploadError } = await supabaseAdmin.storage
-                .from("avatars") // ⚠️ Make sure bucket is named "avatars"
+                .from("avatars")
                 .upload(filePath, buffer, {
                     contentType: "image/png",
                     upsert: true,
@@ -73,15 +76,14 @@ export async function POST(req: Request) {
         }
     } catch (uploadError) {
         console.error("❌ Failed to upload avatar:", uploadError);
-        // Roll back auth user
         await supabaseAdmin.auth.admin.deleteUser(userId);
-        return NextResponse.json(
+        const res = NextResponse.json(
             { message: "Failed to upload avatar. User deleted to maintain integrity." },
             { status: 500 }
         );
+        return addCorsHeaders(request, res);
     }
 
-    // ✅ 3. Insert into user_details
     const { error: insertError } = await supabaseAdmin.from("user_details").insert([
         {
             id: userId,
@@ -95,17 +97,16 @@ export async function POST(req: Request) {
 
     if (insertError) {
         console.error("❌ Error inserting into user_details:", insertError.message);
-        // Roll back auth user
         await supabaseAdmin.auth.admin.deleteUser(userId);
-        return NextResponse.json(
+        const res = NextResponse.json(
             { message: "Failed to insert user details. Auth user deleted.", error: insertError.message },
             { status: 500 }
         );
+        return addCorsHeaders(request, res);
     }
 
     console.log("✅ User profile inserted successfully");
-
-    return NextResponse.json(
+    const res = NextResponse.json(
         {
             message: "User successfully created",
             user_id: userId,
@@ -113,4 +114,5 @@ export async function POST(req: Request) {
         },
         { status: 200 }
     );
+    return addCorsHeaders(request, res);
 }

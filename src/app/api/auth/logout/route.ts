@@ -1,7 +1,11 @@
-// src/app/api/auth/logout/route.ts
 import { NextResponse } from 'next/server'
+import { addCorsHeaders, handlePreflight } from '@/utils/cors'
 
-export async function POST() {
+export async function OPTIONS(request: Request) {
+    return handlePreflight(request)
+}
+
+export async function POST(request: Request) {
     const res = NextResponse.json({ message: 'Logged out' })
 
     // Delete the cookies by setting them with a maxAge of 0
@@ -21,5 +25,5 @@ export async function POST() {
         maxAge: 0,
     })
 
-    return res
+    return addCorsHeaders(request, res)
 }

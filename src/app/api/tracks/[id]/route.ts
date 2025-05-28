@@ -2,7 +2,11 @@
 import { NextResponse, NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import type { Track } from "@/utils/interfaceTypes";
-import { addCorsHeaders } from "@/utils/cors";
+import { addCorsHeaders, handlePreflight } from "@/utils/cors";
+
+export async function OPTIONS(request: NextRequest) {
+    return handlePreflight(request);
+}
 
 export async function GET(
     request: NextRequest,
@@ -17,12 +21,11 @@ export async function GET(
         .single();
 
     if (trackError) {
-        return addCorsHeaders(
-            NextResponse.json(
-                { message: "Error fetching track", error: trackError.message },
-                { status: 500 }
-            )
+        const res = NextResponse.json(
+            { message: "Error fetching track", error: trackError.message },
+            { status: 500 }
         );
+        return addCorsHeaders(request, res);
     }
 
     const { data: song, error: songError } = await supabaseAdmin
@@ -32,24 +35,22 @@ export async function GET(
         .single();
 
     if (songError) {
-        return addCorsHeaders(
-            NextResponse.json(
-                { message: "Error fetching song", error: songError.message },
-                { status: 500 }
-            )
+        const res = NextResponse.json(
+            { message: "Error fetching song", error: songError.message },
+            { status: 500 }
         );
+        return addCorsHeaders(request, res);
     }
 
-    return addCorsHeaders(
-        NextResponse.json({ track, song }, { status: 200 })
-    );
+    const res = NextResponse.json({ track, song }, { status: 200 });
+    return addCorsHeaders(request, res);
 }
 
 export async function PATCH(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    const trackId = (await params).id
+    const trackId = (await params).id;
     const body: Partial<Track> = await request.json();
 
     const allowedFields: (keyof Track)[] = [
@@ -70,13 +71,7 @@ export async function PATCH(
         "instruments",
     ];
 
-    const validInstruments = [
-        "guitar",
-        "bass",
-        "drums",
-        "keyboard",
-        "vocals",
-    ];
+    const validInstruments = ["guitar", "bass", "drums", "keyboard", "vocals"];
 
     const updateData: Partial<Track> = {};
 
@@ -86,9 +81,11 @@ export async function PATCH(
 
             if (key === "instruments" && value !== undefined) {
                 if (!Array.isArray(value)) {
-                    return addCorsHeaders(
-                        NextResponse.json({ message: "Instruments must be an array" }, { status: 400 })
+                    const res = NextResponse.json(
+                        { message: "Instruments must be an array" },
+                        { status: 400 }
                     );
+                    return addCorsHeaders(request, res);
                 }
 
                 const isValidInstrumentsArray = value.every(
@@ -96,9 +93,11 @@ export async function PATCH(
                 );
 
                 if (!isValidInstrumentsArray) {
-                    return addCorsHeaders(
-                        NextResponse.json({ message: "Invalid instruments array" }, { status: 400 })
+                    const res = NextResponse.json(
+                        { message: "Invalid instruments array" },
+                        { status: 400 }
                     );
+                    return addCorsHeaders(request, res);
                 }
             }
 
@@ -107,9 +106,11 @@ export async function PATCH(
     }
 
     if (Object.keys(updateData).length === 0) {
-        return addCorsHeaders(
-            NextResponse.json({ message: "No valid fields provided for update" }, { status: 400 })
+        const res = NextResponse.json(
+            { message: "No valid fields provided for update" },
+            { status: 400 }
         );
+        return addCorsHeaders(request, res);
     }
 
     const { data: updatedTrack, error: updateError } = await supabaseAdmin
@@ -120,12 +121,11 @@ export async function PATCH(
         .single();
 
     if (updateError) {
-        return addCorsHeaders(
-            NextResponse.json(
-                { message: "Error updating track", error: updateError.message },
-                { status: 500 }
-            )
+        const res = NextResponse.json(
+            { message: "Error updating track", error: updateError.message },
+            { status: 500 }
         );
+        return addCorsHeaders(request, res);
     }
 
     const { data: song, error: songError } = await supabaseAdmin
@@ -135,22 +135,20 @@ export async function PATCH(
         .single();
 
     if (songError) {
-        return addCorsHeaders(
-            NextResponse.json(
-                {
-                    message: "Track updated, but error fetching song",
-                    track: updatedTrack,
-                    error: songError.message,
-                },
-                { status: 207 }
-            )
+        const res = NextResponse.json(
+            {
+                message: "Track updated, but error fetching song",
+                track: updatedTrack,
+                error: songError.message,
+            },
+            { status: 207 }
         );
+        return addCorsHeaders(request, res);
     }
 
-    return addCorsHeaders(
-        NextResponse.json(
-            { message: "Track updated", track: updatedTrack, song },
-            { status: 200 }
-        )
+    const res = NextResponse.json(
+        { message: "Track updated", track: updatedTrack, song },
+        { status: 200 }
     );
+    return addCorsHeaders(request, res);
 }

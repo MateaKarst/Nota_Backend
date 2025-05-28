@@ -1,7 +1,11 @@
 // src/app/api/songs/[id]/route.ts
 import { NextResponse, NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
-import { addCorsHeaders } from "@/utils/cors";
+import { addCorsHeaders, handlePreflight } from "@/utils/cors";
+
+export async function OPTIONS(request: NextRequest) {
+    return handlePreflight(request);
+}
 
 export async function GET(
     request: NextRequest,
@@ -16,10 +20,11 @@ export async function GET(
         .single();
 
     if (songError) {
-        return NextResponse.json(
+        const res = NextResponse.json(
             { message: "Error fetching song", error: songError.message },
             { status: 500 }
         );
+        return addCorsHeaders(request, res);
     }
 
     const { data: tracks, error: tracksError } = await supabaseAdmin
@@ -28,17 +33,15 @@ export async function GET(
         .eq("song_id", songId);
 
     if (tracksError) {
-        return addCorsHeaders(
-            NextResponse.json(
-                { message: "Error fetching tracks", error: tracksError.message },
-                { status: 500 }
-            )
+        const res = NextResponse.json(
+            { message: "Error fetching tracks", error: tracksError.message },
+            { status: 500 }
         );
+        return addCorsHeaders(request, res);
     }
 
-    return addCorsHeaders(
-        NextResponse.json({ ...song, tracks }, { status: 200 })
-    );
+    const res = NextResponse.json({ ...song, tracks }, { status: 200 });
+    return addCorsHeaders(request, res);
 }
 
 type SongUpdateData = {
@@ -56,12 +59,11 @@ export async function PATCH(
 
     let updateData: SongUpdateData = {};
 
-    // Detect if it's formData or JSON
     const contentType = request.headers.get("content-type") || "";
 
     if (contentType.includes("application/json")) {
         const body = await request.json();
-        updateData = body; // Expects { title, description, cover_image, ... }
+        updateData = body;
     } else if (contentType.includes("multipart/form-data")) {
         const form = await request.formData();
         const file = form.get("file") as File | null;
@@ -72,9 +74,11 @@ export async function PATCH(
                 .upload(filename, file, { contentType: file.type, upsert: true });
 
             if (uploadError) {
-                return addCorsHeaders(
-                    NextResponse.json({ message: "File upload error", error: uploadError.message }, { status: 500 })
+                const res = NextResponse.json(
+                    { message: "File upload error", error: uploadError.message },
+                    { status: 500 }
                 );
+                return addCorsHeaders(request, res);
             }
 
             const publicUrlData = supabaseAdmin.storage.from("songs").getPublicUrl(filename);
@@ -82,7 +86,6 @@ export async function PATCH(
             updateData.compiled_path = publicUrl;
         }
 
-        // Optional other metadata fields
         const fields: (keyof SongUpdateData)[] = ["title", "description", "cover_image"];
         fields.forEach((key) => {
             const val = form.get(key);
@@ -93,9 +96,8 @@ export async function PATCH(
     }
 
     if (Object.keys(updateData).length === 0) {
-        return addCorsHeaders(
-            NextResponse.json({ message: "No data provided for update" }, { status: 400 })
-        );
+        const res = NextResponse.json({ message: "No data provided for update" }, { status: 400 });
+        return addCorsHeaders(request, res);
     }
 
     const { data, error: updateError } = await supabaseAdmin
@@ -106,12 +108,13 @@ export async function PATCH(
         .single();
 
     if (updateError) {
-        return addCorsHeaders(
-            NextResponse.json({ message: "Error updating song", error: updateError.message }, { status: 500 })
+        const res = NextResponse.json(
+            { message: "Error updating song", error: updateError.message },
+            { status: 500 }
         );
+        return addCorsHeaders(request, res);
     }
 
-    return addCorsHeaders(
-        NextResponse.json({ message: "Song updated", data }, { status: 200 })
-    );
+    const res = NextResponse.json({ message: "Song updated", data }, { status: 200 });
+    return addCorsHeaders(request, res);
 }

@@ -1,9 +1,8 @@
-// src\app\api\tracks\route.ts
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import type { Instrument } from "@/utils/interfaceTypes";
-import { addCorsHeaders } from "@/utils/cors";
-import { parseBuffer } from "music-metadata"; 
+import { parseBuffer } from "music-metadata";
+import { addCorsHeaders, handlePreflight } from "@/utils/cors";
 
 function parseFloatOrNull(value: FormDataEntryValue | null): number | null {
   if (!value) return null;
@@ -20,35 +19,28 @@ function parseJSONOrNull<T>(value: FormDataEntryValue | null): T | null {
   }
 }
 
-export async function POST(req: Request) {
-  const form = await req.formData();
+export async function OPTIONS(request: NextRequest) {
+  return handlePreflight(request);
+}
+
+export async function POST(request: NextRequest) {
+  const form = await request.formData();
 
   const file = form.get("file") as File | null;
   const song_id = form.get("song_id")?.toString();
 
   if (!file || !song_id) {
-    return addCorsHeaders(
-      NextResponse.json({ message: "Missing file or song_id" }, { status: 400 })
-    );
+    const res = NextResponse.json({ message: "Missing file or song_id" }, { status: 400 });
+    return addCorsHeaders(request, res);
   }
 
   const filename = `${crypto.randomUUID()}-${file.name.toLowerCase()}`;
-  // permissions for file upload
   const fileName = file.name.toLowerCase();
   const mimeType = file.type;
 
-  if (
-    !["audio/mpeg"].includes(
-      mimeType
-    ) ||
-    (!fileName.endsWith(".mp3") )
-  ) {
-    return addCorsHeaders(
-      NextResponse.json(
-        { message: "Only MP3 files are allowed" },
-        { status: 400 }
-      )
-    );
+  if (!["audio/mpeg"].includes(mimeType) || !fileName.endsWith(".mp3")) {
+    const res = NextResponse.json({ message: "Only MP3 files are allowed" }, { status: 400 });
+    return addCorsHeaders(request, res);
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
@@ -58,43 +50,29 @@ export async function POST(req: Request) {
     const duration = metadata.format.duration ?? 0;
 
     if (duration < 5) {
-      return addCorsHeaders(
-        NextResponse.json(
-          { message: "Track must be at least 5 seconds long" },
-          { status: 400 }
-        )
-      );
+      const res = NextResponse.json({ message: "Track must be at least 5 seconds long" }, { status: 400 });
+      return addCorsHeaders(request, res);
     }
 
     if (duration > 300) {
-      return addCorsHeaders(
-        NextResponse.json(
-          { message: "Track must be less than 5 minutes long" },
-          { status: 400 }
-        )
-      );
+      const res = NextResponse.json({ message: "Track must be less than 5 minutes long" }, { status: 400 });
+      return addCorsHeaders(request, res);
     }
   } catch (err) {
-    return addCorsHeaders(
-      NextResponse.json(
-        {
-          message: "Failed to read audio metadata",
-          error: (err as Error).message,
-        },
-        { status: 400 }
-      )
+    const res = NextResponse.json(
+      {
+        message: "Failed to read audio metadata",
+        error: (err as Error).message,
+      },
+      { status: 400 }
     );
+    return addCorsHeaders(request, res);
   }
 
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
-
   if (file.size > MAX_FILE_SIZE) {
-    return addCorsHeaders(
-      NextResponse.json(
-        { message: "File is too large. Maximum size is 10MB." },
-        { status: 400 }
-      )
-    );
+    const res = NextResponse.json({ message: "File is too large. Maximum size is 10MB." }, { status: 400 });
+    return addCorsHeaders(request, res);
   }
 
   const { error: uploadError } = await supabaseAdmin.storage
@@ -105,16 +83,11 @@ export async function POST(req: Request) {
     });
 
   if (uploadError) {
-    return addCorsHeaders(
-      NextResponse.json(
-        { message: "Error uploading file", error: uploadError.message },
-        { status: 500 }
-      )
-    );
+    const res = NextResponse.json({ message: "Error uploading file", error: uploadError.message }, { status: 500 });
+    return addCorsHeaders(request, res);
   }
 
-  const publicUrl = supabaseAdmin.storage.from("tracks").getPublicUrl(filename)
-    .data.publicUrl;
+  const publicUrl = supabaseAdmin.storage.from("tracks").getPublicUrl(filename).data.publicUrl;
 
   let instruments: Instrument[] | null = null;
   const instrumentsRaw = form.get("instruments");
@@ -122,20 +95,13 @@ export async function POST(req: Request) {
     try {
       const parsed = JSON.parse(instrumentsRaw.toString());
       if (Array.isArray(parsed)) instruments = parsed;
-      else
-        return addCorsHeaders(
-          NextResponse.json(
-            { message: "Invalid instruments array" },
-            { status: 400 }
-          )
-        );
+      else {
+        const res = NextResponse.json({ message: "Invalid instruments array" }, { status: 400 });
+        return addCorsHeaders(request, res);
+      }
     } catch {
-      return addCorsHeaders(
-        NextResponse.json(
-          { message: "Invalid instruments JSON" },
-          { status: 400 }
-        )
-      );
+      const res = NextResponse.json({ message: "Invalid instruments JSON" }, { status: 400 });
+      return addCorsHeaders(request, res);
     }
   }
 
@@ -165,12 +131,8 @@ export async function POST(req: Request) {
     .single();
 
   if (error) {
-    return addCorsHeaders(
-      NextResponse.json(
-        { message: "Error saving track", error: error.message },
-        { status: 500 }
-      )
-    );
+    const res = NextResponse.json({ message: "Error saving track", error: error.message }, { status: 500 });
+    return addCorsHeaders(request, res);
   }
 
   // Fetch the related song
@@ -181,22 +143,17 @@ export async function POST(req: Request) {
     .single();
 
   if (songError) {
-    return addCorsHeaders(
-      NextResponse.json(
-        {
-          message: "Track created, but failed to fetch song",
-          track,
-          error: songError.message,
-        },
-        { status: 207 }
-      )
+    const res = NextResponse.json(
+      {
+        message: "Track created, but failed to fetch song",
+        track,
+        error: songError.message,
+      },
+      { status: 207 }
     );
+    return addCorsHeaders(request, res);
   }
 
-  return addCorsHeaders(
-    NextResponse.json(
-      { message: "Track created", track, song },
-      { status: 200 }
-    )
-  );
+  const res = NextResponse.json({ message: "Track created", track, song }, { status: 200 });
+  return addCorsHeaders(request, res);
 }

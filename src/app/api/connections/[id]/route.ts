@@ -1,7 +1,11 @@
 // src/app/api/connections/route.ts
 import { NextResponse, NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
-import { addCorsHeaders } from "@/utils/cors";
+import { addCorsHeaders, handlePreflight } from "@/utils/cors";
+
+export async function OPTIONS(request: NextRequest) {
+    return handlePreflight(request);
+}
 
 export async function POST(
     request: NextRequest,
@@ -12,9 +16,11 @@ export async function POST(
     const { id, connection_id } = body;
 
     if (!connection_id || !user_id) {
-        return addCorsHeaders(
-            NextResponse.json({ message: "Missing connection_id or user_id" }, { status: 400 })
+        const res = NextResponse.json(
+            { message: "Missing connection_id or user_id" },
+            { status: 400 }
         );
+        return addCorsHeaders(request, res);
     }
 
     const values = { user_id, connection_id };
@@ -27,15 +33,16 @@ export async function POST(
         .maybeSingle();
 
     if (existingError) {
-        return addCorsHeaders(
-            NextResponse.json({ message: `Error checking existing connection`, error: existingError.message }, { status: 500 })
+        const res = NextResponse.json(
+            { message: "Error checking existing connection", error: existingError.message },
+            { status: 500 }
         );
+        return addCorsHeaders(request, res);
     }
 
     if (existingConnection && !id) {
-        return addCorsHeaders(
-            NextResponse.json({ message: "Connection already exists" }, { status: 409 })
-        );
+        const res = NextResponse.json({ message: "Connection already exists" }, { status: 409 });
+        return addCorsHeaders(request, res);
     }
 
     const { data, error } = id
@@ -52,16 +59,16 @@ export async function POST(
             .single();
 
     if (error) {
-        return addCorsHeaders(
-            NextResponse.json({ message: "Error saving connection", error: error.message }, { status: 500 })
+        const res = NextResponse.json(
+            { message: "Error saving connection", error: error.message },
+            { status: 500 }
         );
+        return addCorsHeaders(request, res);
     }
 
-    return addCorsHeaders(
-        NextResponse.json(data, { status: 200 })
-    );
+    const res = NextResponse.json(data, { status: 200 });
+    return addCorsHeaders(request, res);
 }
-
 
 export async function GET(
     request: NextRequest,
@@ -70,9 +77,8 @@ export async function GET(
     const user_id = (await params).id;
 
     if (!user_id) {
-        return addCorsHeaders(
-            NextResponse.json({ message: "Missing user_id" }, { status: 400 })
-        );
+        const res = NextResponse.json({ message: "Missing user_id" }, { status: 400 });
+        return addCorsHeaders(request, res);
     }
 
     const { data, error } = await supabaseAdmin
@@ -81,19 +87,16 @@ export async function GET(
         .eq("user_id", user_id);
 
     if (error) {
-        return addCorsHeaders(
-            NextResponse.json(
-                { message: "Error fetching connections", error: error.message },
-                { status: 500 }
-            )
+        const res = NextResponse.json(
+            { message: "Error fetching connections", error: error.message },
+            { status: 500 }
         );
+        return addCorsHeaders(request, res);
     }
 
-    return addCorsHeaders(
-        NextResponse.json(data, { status: 200 })
-    );
+    const res = NextResponse.json(data, { status: 200 });
+    return addCorsHeaders(request, res);
 }
-
 
 export async function DELETE(
     request: NextRequest,
@@ -102,9 +105,8 @@ export async function DELETE(
     const id = (await params).id;
 
     if (!id) {
-        return addCorsHeaders(
-            NextResponse.json({ message: "Missing connection id" }, { status: 400 })
-        );
+        const res = NextResponse.json({ message: "Missing connection id" }, { status: 400 });
+        return addCorsHeaders(request, res);
     }
 
     // Check if connection exists first
@@ -115,18 +117,16 @@ export async function DELETE(
         .single();
 
     if (fetchError) {
-        return addCorsHeaders(
-            NextResponse.json(
-                { message: "Error checking connection existence", error: fetchError.message },
-                { status: 500 }
-            )
+        const res = NextResponse.json(
+            { message: "Error checking connection existence", error: fetchError.message },
+            { status: 500 }
         );
+        return addCorsHeaders(request, res);
     }
 
     if (!existingConnection) {
-        return addCorsHeaders(
-            NextResponse.json({ message: "Connection not found" }, { status: 404 })
-        );
+        const res = NextResponse.json({ message: "Connection not found" }, { status: 404 });
+        return addCorsHeaders(request, res);
     }
 
     // Proceed to delete
@@ -136,15 +136,13 @@ export async function DELETE(
         .eq("id", id);
 
     if (deleteError) {
-        return addCorsHeaders(
-            NextResponse.json(
-                { message: "Error deleting connection", error: deleteError.message },
-                { status: 500 }
-            )
+        const res = NextResponse.json(
+            { message: "Error deleting connection", error: deleteError.message },
+            { status: 500 }
         );
+        return addCorsHeaders(request, res);
     }
 
-    return addCorsHeaders(
-        NextResponse.json({ message: "Connection deleted successfully" }, { status: 200 })
-    );
+    const res = NextResponse.json({ message: "Connection deleted successfully" }, { status: 200 });
+    return addCorsHeaders(request, res);
 }
