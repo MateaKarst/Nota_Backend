@@ -26,10 +26,28 @@ interface TrackResponse {
     error?: string;
 }
 
+interface EditedSong {
+    id: string;
+    title: string;
+    user_id: string;
+    description?: string;
+    cover_image?: string;
+    compiled_path?: string;
+}
+
+interface EditedTrack {
+    id: string;
+    song_id: string;
+    url: string;
+    storage_path: string;
+    volume?: number;
+    instruments?: string[];
+}
+
 interface TrackEditResponse {
     message: string;
-    track?: any;
-    song?: any;
+    track?: EditedTrack;
+    song?: EditedSong;
     error?: string;
 }
 
@@ -49,7 +67,7 @@ const Tester = () => {
     // Responses
     const [songResponse, setSongResponse] = useState<SongResponse | null>(null);
     const [trackResponse, setTrackResponse] = useState<TrackResponse | null>(null);
-    const [editResponse, setEditResponse] = useState<any | null>(null);
+    const [editResponse, setEditResponse] = useState<SongResponse | null>(null);
 
     //Edit song
     const [editTitle, setEditTitle] = useState("");
@@ -194,8 +212,10 @@ const Tester = () => {
             parsedBody = JSON.parse(editTrackData);
         } catch (err) {
             alert("Invalid JSON data.");
+            console.error("JSON parse error:", err);
             return;
         }
+
 
         const res = await fetch(`/api/tracks/${editTrackId}`, {
             method: "PATCH",

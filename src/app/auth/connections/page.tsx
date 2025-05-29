@@ -3,12 +3,19 @@
 import { useState } from "react";
 import Navbar from "@/components/Navbar";
 
+type ApiResponse = { message?: string; [key: string]: unknown };
+type Connection = {
+    id: string,
+    user_id: string,
+    connection_id: string;
+};
+
 export default function TestConnectionPage() {
     const [userId, setUserId] = useState("");
     const [connectionUserId, setConnectionUserId] = useState(""); // for creating connection
     const [connectionRecordId, setConnectionRecordId] = useState(""); // for deleting connection
     const [getConnectionsUserId, setGetConnectionsUserId] = useState(""); // for fetching connections
-    const [response, setResponse] = useState<any>(null);
+    const [response, setResponse] = useState<ApiResponse | null>(null);
     const [connections, setConnections] = useState<string[] | null>(null);
     const [getConnectionsError, setGetConnectionsError] = useState<string | null>(null);
 
@@ -63,21 +70,20 @@ export default function TestConnectionPage() {
             const res = await fetch(`/api/connections/${getConnectionsUserId}`, {
                 method: "GET",
             });
-            const data = await res.json();
+            const data: Connection[] = await res.json();
 
             if (!res.ok) {
-                setGetConnectionsError(data.message || "Failed to fetch connections.");
+                setGetConnectionsError("Failed to fetch connections.");
                 return;
             }
 
-            // data is expected to be an array of connection rows with connection_id
-            const connectionIds = data.map((conn: any) => conn.connection_id);
+            const connectionIds = data.map(conn => conn.connection_id);
             setConnections(connectionIds);
         } catch (error) {
+            console.error(error);
             setGetConnectionsError("Error fetching connections.");
         }
     };
-
     return (
         <>
             <Navbar />
