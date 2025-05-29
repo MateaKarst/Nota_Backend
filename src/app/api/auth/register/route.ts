@@ -32,11 +32,16 @@ export async function POST(request: Request) {
     }
 
     console.log("🛠️ Creating user in Supabase Auth...");
-    const { data: userAuth, error: errorAuth } = await supabaseAdmin.auth.signUp({
+    // const { data: userAuth, error: errorAuth } = await supabaseAdmin.auth.signUp({
+    //     email,
+    //     password,
+    // });
+    const { data: userAuth, error: errorAuth } = await supabaseAdmin.auth.admin.createUser({
         email,
         password,
+        email_confirm: true, // <- This skips the confirmation step
     });
-
+    
     if (errorAuth || !userAuth.user?.id) {
         console.error("❌ Error creating auth user:", errorAuth?.message);
         const res = NextResponse.json(
