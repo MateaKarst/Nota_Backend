@@ -20,18 +20,17 @@ export async function DELETE(
         .eq("id", trackId);
 
     if (trackDeleteError) {
-        return addCorsHeaders(
-            NextResponse.json(
-                { message: "Error deleting track", error: trackDeleteError.message },
-                { status: 500 }
-            )
+        const res = NextResponse.json(
+            { message: "Error deleting track", error: trackDeleteError.message },
+            { status: 500 }
         );
+        return addCorsHeaders(request, res); // ✅ Pass request
     }
 
-    return addCorsHeaders(
-        NextResponse.json({ message: "Track deleted" }, { status: 200 })
-    );
+    const res = NextResponse.json({ message: "Track deleted" }, { status: 200 });
+    return addCorsHeaders(request, res); // ✅ Pass request
 }
+
 
 export async function GET(
     request: NextRequest,

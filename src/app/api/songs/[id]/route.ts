@@ -13,40 +13,41 @@ export async function DELETE(
 ) {
     const songId = (await params).id;
 
-    // Спочатку видалимо треки пісні
+    // First delete tracks associated with the song
     const { error: tracksDeleteError } = await supabaseAdmin
         .from("tracks")
         .delete()
         .eq("song_id", songId);
 
     if (tracksDeleteError) {
-        return addCorsHeaders(
-            NextResponse.json(
-                { message: "Error deleting tracks", error: tracksDeleteError.message },
-                { status: 500 }
-            )
+        const res = NextResponse.json(
+            { message: "Error deleting tracks", error: tracksDeleteError.message },
+            { status: 500 }
         );
+        return addCorsHeaders(request, res); // ✅ Fix: pass request here
     }
 
-    // Потім видаляємо саму пісню
+    // Then delete the song
     const { error: songDeleteError } = await supabaseAdmin
         .from("songs")
         .delete()
         .eq("id", songId);
 
     if (songDeleteError) {
-        return addCorsHeaders(
-            NextResponse.json(
-                { message: "Error deleting song", error: songDeleteError.message },
-                { status: 500 }
-            )
+        const res = NextResponse.json(
+            { message: "Error deleting song", error: songDeleteError.message },
+            { status: 500 }
         );
+        return addCorsHeaders(request, res); // ✅ Fix: pass request here
     }
 
-    return addCorsHeaders(
-        NextResponse.json({ message: "Song and its tracks deleted" }, { status: 200 })
+    const res = NextResponse.json(
+        { message: "Song and its tracks deleted" },
+        { status: 200 }
     );
+    return addCorsHeaders(request, res); // ✅ Fix: pass request here
 }
+
 
 export async function GET(
     request: NextRequest,
