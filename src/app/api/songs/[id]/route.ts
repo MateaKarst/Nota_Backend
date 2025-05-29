@@ -3,6 +3,47 @@ import { NextResponse, NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { addCorsHeaders } from "@/utils/cors";
 
+export async function DELETE(
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    const songId = (await params).id;
+
+    // Спочатку видалимо треки пісні
+    const { error: tracksDeleteError } = await supabaseAdmin
+        .from("tracks")
+        .delete()
+        .eq("song_id", songId);
+
+    if (tracksDeleteError) {
+        return addCorsHeaders(
+            NextResponse.json(
+                { message: "Error deleting tracks", error: tracksDeleteError.message },
+                { status: 500 }
+            )
+        );
+    }
+
+    // Потім видаляємо саму пісню
+    const { error: songDeleteError } = await supabaseAdmin
+        .from("songs")
+        .delete()
+        .eq("id", songId);
+
+    if (songDeleteError) {
+        return addCorsHeaders(
+            NextResponse.json(
+                { message: "Error deleting song", error: songDeleteError.message },
+                { status: 500 }
+            )
+        );
+    }
+
+    return addCorsHeaders(
+        NextResponse.json({ message: "Song and its tracks deleted" }, { status: 200 })
+    );
+}
+
 export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
