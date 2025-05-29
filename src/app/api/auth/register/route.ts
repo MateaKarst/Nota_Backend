@@ -109,8 +109,7 @@ export async function POST(request: Request) {
     const res = NextResponse.json(
         {
             message: "User successfully created",
-            user_id: userId,
-            avatar_url,
+            user: userId
         },
         { status: 200 }
     );

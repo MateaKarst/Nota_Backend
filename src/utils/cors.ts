@@ -6,7 +6,8 @@ const allowedOrigins = [
     'http://localhost:3001',
     'http://192.168.1.38:3000',
     'http://192.168.1.38:3001',
-    'https://nota-community.netlify.app'
+    'https://nota-community.netlify.app',
+    'https://nota-backend-delta.vercel.app'
 ]
 
 export function handlePreflight(request: Request): NextResponse {

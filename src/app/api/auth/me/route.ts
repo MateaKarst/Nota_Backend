@@ -119,8 +119,11 @@ export async function GET(request: Request) {
     // User valid on first try, return user info
     const res = NextResponse.json({
         user: {
+            id: user?.id,
             email: user.email,
             name: user.user_metadata?.full_name || '',
+            access_token: access_token,
+            refresh_token: refresh_token,
         },
     })
 
