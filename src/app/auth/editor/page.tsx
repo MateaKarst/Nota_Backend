@@ -39,6 +39,8 @@ const Tester = () => {
     const [userId, setUserId] = useState("");
     const [description, setDescription] = useState("");
     const [coverImage, setCoverImage] = useState("");
+    const [deleteTrackId, setDeleteTrackId] = useState("");
+
 
     // Track state
     const [songId, setSongId] = useState("");
@@ -115,6 +117,23 @@ const Tester = () => {
         console.log("Delete response:", data);
     };
 
+    const deleteTrack = async () => {
+        if (!deleteTrackId) {
+            alert("Please enter a Track ID to delete.");
+            return;
+        }
+
+        const confirmed = confirm(`Are you sure you want to delete track ID: ${deleteTrackId}?`);
+        if (!confirmed) return;
+
+        const res = await fetch(`/api/tracks/${deleteTrackId}`, {
+            method: "DELETE",
+        });
+
+        const data = await res.json();
+        alert(data.message || "Delete request sent.");
+        console.log("Delete track response:", data);
+    };
 
 
     const uploadTrack = async () => {
@@ -301,6 +320,18 @@ const Tester = () => {
                     Delete Song
                 </button>
 
+                <hr style={{ margin: "30px 0" }} />
+                <h2>Delete Track</h2>
+                <input
+                    placeholder="Track ID"
+                    value={deleteTrackId}
+                    onChange={e => setDeleteTrackId(e.target.value)}
+                />
+                <br />
+                <button onClick={deleteTrack} style={{ marginTop: 10, backgroundColor: "#c0392b", color: "#fff" }}>
+                    Delete Track
+                </button>
+                <div></div>
             </div>
         </>
     );
