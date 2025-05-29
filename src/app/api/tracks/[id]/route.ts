@@ -8,6 +8,31 @@ export async function OPTIONS(request: NextRequest) {
     return handlePreflight(request);
 }
 
+export async function DELETE(
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    const trackId = (await params).id;
+
+    const { error: trackDeleteError } = await supabaseAdmin
+        .from("tracks")
+        .delete()
+        .eq("id", trackId);
+
+    if (trackDeleteError) {
+        return addCorsHeaders(
+            NextResponse.json(
+                { message: "Error deleting track", error: trackDeleteError.message },
+                { status: 500 }
+            )
+        );
+    }
+
+    return addCorsHeaders(
+        NextResponse.json({ message: "Track deleted" }, { status: 200 })
+    );
+}
+
 export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
