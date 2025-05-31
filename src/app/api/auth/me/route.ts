@@ -3,7 +3,8 @@ import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { addCorsHeaders, handlePreflight } from '@/utils/cors'
-
+// const isProduction = process.env.NODE_ENV === "production";
+const isProduction = false; 
 export async function OPTIONS(request: Request) {
     return handlePreflight(request)
 }
@@ -99,16 +100,16 @@ export async function GET(request: Request) {
 
         res.cookies.set('access_token', newAccessToken, {
             httpOnly: true,
-            secure: true,
-            sameSite: 'lax',
+            sameSite: isProduction ? 'none' : 'lax', // use 'none' only in production on https
+            secure: isProduction,                   // true in prod (https), false in dev (http)
             path: '/',
             maxAge: 60 * 60 * 24 * 7,
         })
 
         res.cookies.set('refresh_token', newRefreshToken, {
             httpOnly: true,
-            secure: true,
-            sameSite: 'lax',
+            sameSite: isProduction ? 'none' : 'lax',
+            secure: isProduction,
             path: '/',
             maxAge: 60 * 60 * 24 * 30,
         })

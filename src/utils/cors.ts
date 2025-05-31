@@ -18,22 +18,23 @@ const allowedOrigins = [
 ]
 
 export function handlePreflight(request: Request): NextResponse {
-    const origin = request.headers.get('origin') || ''
+    const origin = request.headers.get('origin') || '';
     const headers: Record<string, string> = {
         'Access-Control-Allow-Methods': 'GET, PATCH, POST, PUT, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-refresh-token',
         'Access-Control-Allow-Credentials': 'true',
-    }
+    };
 
     if (allowedOrigins.includes(origin)) {
-        headers['Access-Control-Allow-Origin'] = origin
+        headers['Access-Control-Allow-Origin'] = origin;
     }
 
     return new NextResponse(null, {
         status: 204,
         headers,
-    })
+    });
 }
+
 
 export function addCorsHeaders(
     request: Request,
