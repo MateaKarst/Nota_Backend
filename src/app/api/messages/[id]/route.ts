@@ -4,13 +4,79 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { addCorsHeaders, handlePreflight } from "@/utils/cors";
 
 export async function OPTIONS(request: NextRequest) {
-    return handlePreflight(request);
+  return handlePreflight(request);
 }
 
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const sender_id = request.headers.get("x-user-id");
+  const receiver_id = params.id;
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+  if (!sender_id) {
+    const res = NextResponse.json(
+      { message: "Missing authenticated user ID in header" },
+      { status: 401 }
+    );
+    return addCorsHeaders(request, res);
+  }
+
+  if (!receiver_id) {
+    const res = NextResponse.json(
+      { message: "Missing receiver user ID in URL" },
+      { status: 400 }
+    );
+    return addCorsHeaders(request, res);
+  }
+
+  const body = await request.json();
+  const { text } = body;
+
+  if (!text) {
+    const res = NextResponse.json(
+      { message: "Missing text in request body" },
+      { status: 400 }
+    );
+    return addCorsHeaders(request, res);
+  }
+
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("messages")
+      .insert([
+        {
+          sender_id,
+          receiver_id,
+          text,
+        },
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      const res = NextResponse.json(
+        { message: "Error inserting message", error: error.message },
+        { status: 500 }
+      );
+      return addCorsHeaders(request, res);
+    }
+
+    const res = NextResponse.json(data, { status: 201 });
+    return addCorsHeaders(request, res);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    const res = NextResponse.json({ message }, { status: 500 });
+    return addCorsHeaders(request, res);
+  }
+}
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const authUser = request.headers.get("x-user-id");
-  const otherUserId = params.id;
+  const otherUserId = (await params).id;
 
   if (!authUser) {
     const res = NextResponse.json({ message: "Missing authenticated user ID" }, { status: 401 });
@@ -49,9 +115,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const message_id = params.id;
+  const message_id = (await params).id;
 
   if (!message_id) {
     const res = NextResponse.json({ message: "Missing message_id" }, { status: 400 });
@@ -85,7 +151,7 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const message_id = params.id;
+  const message_id = (await params).id;
   const { text } = await request.json();
 
   if (!message_id || !text) {
