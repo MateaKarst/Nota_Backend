@@ -50,8 +50,8 @@ export async function GET(
 }
 
 export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+   request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
 ) {
   const message_id = (await params).id;
 
@@ -84,8 +84,8 @@ export async function DELETE(
 }
 
 export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+   request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
 ) {
   const message_id = (await params).id;
   const { text } = await request.json();
