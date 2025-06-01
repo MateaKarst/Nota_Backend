@@ -11,10 +11,10 @@ const Navbar = () => {
     const handleLogout = async () => {
         setIsLoggingOut(true);
         await fetch("/api/auth/logout", { method: "POST" });
-        await refreshUser(); // ✅ update context after logout
+        await refreshUser(); // update context after logout
         setIsLoggedIn(false);
         setIsLoggingOut(false);
-        window.location.href = "/"; // Optional: force nav
+        window.location.href = "/"; // force nav
     };
 
     return (
@@ -27,6 +27,7 @@ const Navbar = () => {
                     <Link className="me-3 text-white text-decoration-none" href="/auth/connections">Connections</Link>
                     <Link className="me-3 text-white text-decoration-none" href="/auth/editor">Editor</Link>
                     <Link className="me-3 text-white text-decoration-none" href="/auth/profile">Profile</Link>
+                    <Link className="me-3 text-white text-decoration-none" href="/auth/chat">Chat</Link>
                     <button
                         className="btn btn-danger"
                         onClick={handleLogout}
