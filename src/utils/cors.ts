@@ -21,7 +21,7 @@ export function handlePreflight(request: Request): NextResponse {
     const origin = request.headers.get('origin') || '';
     const headers: Record<string, string> = {
         'Access-Control-Allow-Methods': 'GET, PATCH, POST, PUT, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-refresh-token',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-refresh-token, x-user-id',
         'Access-Control-Allow-Credentials': 'true',
     };
 
@@ -34,7 +34,6 @@ export function handlePreflight(request: Request): NextResponse {
         headers,
     });
 }
-
 
 export function addCorsHeaders(
     request: Request,
