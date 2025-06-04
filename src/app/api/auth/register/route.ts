@@ -12,16 +12,14 @@ export async function POST(request: Request) {
     const {
         email,
         password,
-        first_name,
-        last_name,
+        name,
         avatar,
         profile_description,
     } = await request.json();
 
     console.log("📩 Received data:", {
         email,
-        first_name,
-        last_name,
+        name,
         profile_description,
     });
 
@@ -41,7 +39,7 @@ export async function POST(request: Request) {
         password,
         email_confirm: true, // <- This skips the confirmation step
     });
-    
+
     if (errorAuth || !userAuth.user?.id) {
         console.error("❌ Error creating auth user:", errorAuth?.message);
         const res = NextResponse.json(
@@ -93,8 +91,7 @@ export async function POST(request: Request) {
         {
             id: userId,
             email,
-            first_name,
-            last_name,
+            name,
             avatar: avatar_url,
             profile_description,
         },
