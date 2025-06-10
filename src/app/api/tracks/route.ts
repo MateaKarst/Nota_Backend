@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
     return addCorsHeaders(request, res);
   }
 
-  // Fetch the related song
+  // fetch the related song
   const { data: song, error: songError } = await supabaseAdmin
     .from("songs")
     .select("*")

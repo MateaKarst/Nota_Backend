@@ -18,7 +18,7 @@ export async function GET(
     }
 
     try {
-        // 1. Get user info from Supabase Admin API
+        // get user info from Supabase Admin API
         const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(user_id);
 
         if (authError) {
@@ -32,7 +32,7 @@ export async function GET(
             return addCorsHeaders(request, res);
         }
 
-        // 2. Get user details from user_details table
+        // get user details from user_details table
         const { data: userDetails, error: detailsError } = await supabaseAdmin
             .from("user_details")
             .select("*")
@@ -45,7 +45,7 @@ export async function GET(
             return addCorsHeaders(request, res);
         }
 
-        // 3. Combine the results
+        // combine the results
         const combinedUser = {
             user: { ...authUser },
             user_details: { ...userDetails },
@@ -85,7 +85,7 @@ export async function PATCH(
 
         if (avatar) {
             try {
-                console.log("🖼️ Uploading avatar image to Supabase Storage...");
+                console.log("Uploading avatar image to Supabase Storage...");
 
                 const base64Data = avatar.includes(",") ? avatar.split(",")[1] : avatar;
                 const buffer = Buffer.from(base64Data, "base64");
@@ -111,15 +111,15 @@ export async function PATCH(
                     .getPublicUrl(filePath);
 
                 avatar_url = publicUrlData.publicUrl;
-                console.log("✅ Avatar uploaded successfully:", avatar_url);
+                console.log("Avatar uploaded successfully:", avatar_url);
 
             } catch (uploadError: unknown) {
-                // Narrow error type to string message
+                // narrow error type to string message
                 let message = "Unknown error";
                 if (uploadError instanceof Error) message = uploadError.message;
                 else if (typeof uploadError === "string") message = uploadError;
 
-                console.error("❌ Failed to upload avatar:", message);
+                console.error("Failed to upload avatar:", message);
                 const res = NextResponse.json(
                     { message: "Failed to upload avatar.", error: message },
                     { status: 500 }
@@ -142,7 +142,7 @@ export async function PATCH(
             .single();
 
         if (error) {
-            console.error("❌ Error updating user details:", error.message ?? error);
+            console.error("Error updating user details:", error.message ?? error);
             const res = NextResponse.json(
                 { message: "Error updating user details", error: error.message ?? error },
                 { status: 500 }

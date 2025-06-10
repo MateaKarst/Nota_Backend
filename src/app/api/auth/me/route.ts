@@ -46,13 +46,13 @@ export async function GET(request: Request) {
         }
     )
 
-    // Try to get user with access token
+    // try to get user with access token
     const {
         data: { user },
         error,
     } = await supabase.auth.getUser(access_token)
 
-    // If token invalid or no user, try refresh
+    // if token invalid or no user, try refresh
     if (error || !user) {
         const {
             data: refreshData,
@@ -60,7 +60,7 @@ export async function GET(request: Request) {
         } = await supabase.auth.refreshSession({ refresh_token })
 
         if (refreshError || !refreshData.session) {
-            // Refresh failed, return user null (or 401 if you want strict)
+            // refresh failed, return user null/401 
             const res = NextResponse.json({ user: null }, { status: 200 })
             return addCorsHeaders(request, res)
         }
@@ -68,7 +68,7 @@ export async function GET(request: Request) {
         const newAccessToken = refreshData.session.access_token
         const newRefreshToken = refreshData.session.refresh_token
 
-        // Recreate supabase client with new access token
+        // recreate supabase client with new access token
         supabase = createClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
             process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -90,7 +90,7 @@ export async function GET(request: Request) {
             return addCorsHeaders(request, res)
         }
 
-        // Set refreshed tokens as httpOnly cookies (always)
+        // set refreshed tokens as httpOnly cookies (always)
         const res = NextResponse.json({
             user: {
                 email: refreshedUser.email,
@@ -100,7 +100,7 @@ export async function GET(request: Request) {
 
         res.cookies.set('access_token', newAccessToken, {
             httpOnly: true,
-            sameSite: isProduction ? 'none' : 'lax', // use 'none' only in production on https
+            sameSite: isProduction ? 'none' : 'lax', 
             secure: isProduction,                   // true in prod (https), false in dev (http)
             path: '/',
             maxAge: 60 * 60 * 24 * 7,
@@ -117,7 +117,7 @@ export async function GET(request: Request) {
         return addCorsHeaders(request, res)
     }
 
-    // User valid on first try, return user info
+    // user valid on first try, return user info
     const res = NextResponse.json({
         user: {
             id: user?.id,

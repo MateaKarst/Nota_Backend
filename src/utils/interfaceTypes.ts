@@ -1,6 +1,6 @@
 // src/utils/interfaceTypes.ts
 
-// Enum values for genres (songs)
+// enum values for genres (songs)
 export type Genre =
     | "rock"
     | "pop"
@@ -10,7 +10,7 @@ export type Genre =
     | "electronic"
     | "country";
 
-// Enum values for instruments (tracks)
+// enum values for instruments (tracks)
 export type Instrument =
     | "guitar"
     | "bass"
@@ -20,7 +20,7 @@ export type Instrument =
     | "synthesizer"
     | "saxophone";
 
-// Song interface
+// song interface
 export interface Song {
     id?: string;
     title: string;
@@ -28,10 +28,10 @@ export interface Song {
     description?: string | null;
     cover_image?: string | null;
     compiled_path?: string | null;
-    genres?: Genre[]; // multiple genres
+    genres?: Genre[]; 
 }
 
-// Track interface
+// track interface
 interface EnvelopePoint {
     time: number;
     volume: number;

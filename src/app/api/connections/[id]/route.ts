@@ -109,7 +109,7 @@ export async function DELETE(
         return addCorsHeaders(request, res);
     }
 
-    // Check if connection exists first
+    // check if connection exists 
     const { data: existingConnection, error: fetchError } = await supabaseAdmin
         .from("connections")
         .select("id")
@@ -129,7 +129,7 @@ export async function DELETE(
         return addCorsHeaders(request, res);
     }
 
-    // Proceed to delete
+    // proceed to delete
     const { error: deleteError } = await supabaseAdmin
         .from("connections")
         .delete()

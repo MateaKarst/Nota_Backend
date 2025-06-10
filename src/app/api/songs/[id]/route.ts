@@ -13,7 +13,7 @@ export async function DELETE(
 ) {
     const songId = (await params).id;
 
-    // First delete tracks associated with the song
+    // first delete tracks associated with the song
     const { error: tracksDeleteError } = await supabaseAdmin
         .from("tracks")
         .delete()
@@ -24,7 +24,7 @@ export async function DELETE(
             { message: "Error deleting tracks", error: tracksDeleteError.message },
             { status: 500 }
         );
-        return addCorsHeaders(request, res); // ✅ Fix: pass request here
+        return addCorsHeaders(request, res); 
     }
 
     // Then delete the song
@@ -38,14 +38,14 @@ export async function DELETE(
             { message: "Error deleting song", error: songDeleteError.message },
             { status: 500 }
         );
-        return addCorsHeaders(request, res); // ✅ Fix: pass request here
+        return addCorsHeaders(request, res); 
     }
 
     const res = NextResponse.json(
         { message: "Song and its tracks deleted" },
         { status: 200 }
     );
-    return addCorsHeaders(request, res); // ✅ Fix: pass request here
+    return addCorsHeaders(request, res); 
 }
 
 
@@ -91,6 +91,7 @@ type SongUpdateData = {
     description?: string;
     cover_image?: string;
     compiled_path?: string;
+    genres?: string[];
 };
 
 export async function PATCH(
@@ -128,11 +129,19 @@ export async function PATCH(
             updateData.compiled_path = publicUrl;
         }
 
-        const fields: (keyof SongUpdateData)[] = ["title", "description", "cover_image"];
+        const fields: (keyof SongUpdateData)[] = ["title", "description", "cover_image", "genres"];
         fields.forEach((key) => {
             const val = form.get(key);
             if (typeof val === "string") {
-                updateData[key] = val;
+                if (key === "genres") {
+                    try {
+                        updateData.genres = JSON.parse(val); // Important!
+                    } catch {
+                        console.warn("Invalid genres JSON string");
+                    }
+                } else {
+                    updateData[key] = val;
+                }
             }
         });
     }

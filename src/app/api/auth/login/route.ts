@@ -33,11 +33,11 @@ export async function POST(request: Request) {
         },
     });
 
-    // Set cookies AFTER response is created
+    // set cookies AFTER response is created
     response.cookies.set('access_token', accessToken, {
         httpOnly: true,
         sameSite: 'lax',
-        secure: true, // set to false in dev if needed
+        secure: true, 
         path: '/',
         maxAge: 60 * 60 * 24 * 7, // 7 days
     });
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     response.cookies.set('refresh_token', refreshToken, {
         httpOnly: true,
         sameSite: 'lax',
-        secure: true, // set to false in dev if needed
+        secure: true, 
         path: '/',
         maxAge: 60 * 60 * 24 * 30, // 30 days
     });

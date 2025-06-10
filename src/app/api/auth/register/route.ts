@@ -73,10 +73,10 @@ export async function POST(request: Request) {
                 .getPublicUrl(filePath);
 
             avatar_url = publicUrlData.publicUrl;
-            console.log("✅ Avatar uploaded successfully:", avatar_url);
+            console.log("Avatar uploaded successfully:", avatar_url);
         }
     } catch (uploadError) {
-        console.error("❌ Failed to upload avatar:", uploadError);
+        console.error("Failed to upload avatar:", uploadError);
         await supabaseAdmin.auth.admin.deleteUser(userId);
         const res = NextResponse.json(
             { message: "Failed to upload avatar. User deleted to maintain integrity." },
@@ -96,7 +96,7 @@ export async function POST(request: Request) {
     ]);
 
     if (insertError) {
-        console.error("❌ Error inserting into user_details:", insertError.message);
+        console.error("Error inserting into user_details:", insertError.message);
         await supabaseAdmin.auth.admin.deleteUser(userId);
         const res = NextResponse.json(
             { message: "Failed to insert user details. Auth user deleted.", error: insertError.message },
@@ -105,17 +105,17 @@ export async function POST(request: Request) {
         return addCorsHeaders(request, res);
     }
 
-    console.log("✅ User profile inserted successfully");
+    console.log("User profile inserted successfully");
 
-    // Now, sign in the user to get session tokens
+    // sign in the user to get session tokens
     const { data: signInData, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
         email,
         password,
     });
 
     if (signInError || !signInData.session) {
-        console.error("❌ Failed to sign in new user:", signInError?.message);
-        // Optionally delete user to rollback
+        console.error("Failed to sign in new user:", signInError?.message);
+        
         await supabaseAdmin.auth.admin.deleteUser(userId);
         const res = NextResponse.json(
             { message: "Failed to sign in new user", error: signInError?.message },
@@ -141,7 +141,7 @@ export async function POST(request: Request) {
         { status: 200 }
     );
 
-    // Set auth cookies
+    // set auth cookies
     res.cookies.set('access_token', accessToken, {
         httpOnly: true,
         sameSite: 'lax',
