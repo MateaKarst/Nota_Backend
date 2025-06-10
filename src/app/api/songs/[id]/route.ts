@@ -24,7 +24,7 @@ export async function DELETE(
             { message: "Error deleting tracks", error: tracksDeleteError.message },
             { status: 500 }
         );
-        return addCorsHeaders(request, res); 
+        return addCorsHeaders(request, res);
     }
 
     // Then delete the song
@@ -38,14 +38,14 @@ export async function DELETE(
             { message: "Error deleting song", error: songDeleteError.message },
             { status: 500 }
         );
-        return addCorsHeaders(request, res); 
+        return addCorsHeaders(request, res);
     }
 
     const res = NextResponse.json(
         { message: "Song and its tracks deleted" },
         { status: 200 }
     );
-    return addCorsHeaders(request, res); 
+    return addCorsHeaders(request, res);
 }
 
 
@@ -109,12 +109,15 @@ export async function PATCH(
         updateData = body;
     } else if (contentType.includes("multipart/form-data")) {
         const form = await request.formData();
-        const file = form.get("file") as File | null;
+        const file = form.get("cover_image") as File | null;
         if (file) {
             const filename = `${crypto.randomUUID()}-${file.name}`;
             const { error: uploadError } = await supabaseAdmin.storage
                 .from("songs")
-                .upload(filename, file, { contentType: file.type, upsert: true });
+                .upload(filename, file, {
+                    contentType: file.type,
+                    upsert: true,
+                });
 
             if (uploadError) {
                 const res = NextResponse.json(
@@ -124,9 +127,8 @@ export async function PATCH(
                 return addCorsHeaders(request, res);
             }
 
-            const publicUrlData = supabaseAdmin.storage.from("songs").getPublicUrl(filename);
-            const publicUrl = publicUrlData.data.publicUrl;
-            updateData.compiled_path = publicUrl;
+            const { data: publicUrlData } = supabaseAdmin.storage.from("songs").getPublicUrl(filename);
+            updateData.cover_image = publicUrlData.publicUrl;
         }
 
         const fields: (keyof SongUpdateData)[] = ["title", "description", "cover_image", "genres"];
@@ -135,7 +137,11 @@ export async function PATCH(
             if (typeof val === "string") {
                 if (key === "genres") {
                     try {
-                        updateData.genres = JSON.parse(val); // Important!
+                        const parsed = JSON.parse(val);
+                        if (Array.isArray(parsed) && parsed.every((g) => typeof g === "string")) {
+                            const VALID_GENRES = ['rock', 'pop', 'jazz', 'classical', 'hiphop', 'electronic', 'country', 'other'];
+                            updateData.genres = parsed.filter((g) => VALID_GENRES.includes(g));
+                        }
                     } catch {
                         console.warn("Invalid genres JSON string");
                     }
