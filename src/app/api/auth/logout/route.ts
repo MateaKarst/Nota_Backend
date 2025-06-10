@@ -9,7 +9,7 @@ export async function OPTIONS(request: Request) {
 export async function POST(request: Request) {
     const res = NextResponse.json({ message: 'Logged out' })
 
-    // Delete the cookies by setting them with a maxAge of 0
+    // delete the cookies by setting them with a maxAge of 0
     res.cookies.set('access_token', '', {
         path: '/',
         httpOnly: true,

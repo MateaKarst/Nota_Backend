@@ -1,3 +1,5 @@
+// src/app/api/tracks/route.ts
+
 import { NextResponse, NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import type { Instrument } from "@/utils/interfaceTypes";
@@ -28,6 +30,12 @@ export async function POST(request: NextRequest) {
 
   const file = form.get("file") as File | null;
   const song_id = form.get("song_id")?.toString();
+
+  const user_id = form.get("user_id")?.toString();
+  if (!user_id) {
+    const res = NextResponse.json({ message: "Missing user_id" }, { status: 400 });
+    return addCorsHeaders(request, res);
+  }
 
   if (!file || !song_id) {
     const res = NextResponse.json({ message: "Missing file or song_id" }, { status: 400 });
@@ -107,6 +115,7 @@ export async function POST(request: NextRequest) {
 
   const trackData = {
     song_id,
+    user_id,
     url: publicUrl,
     storage_path: filename,
     start_position: parseFloatOrNull(form.get("start_position")) ?? 0,
@@ -135,7 +144,7 @@ export async function POST(request: NextRequest) {
     return addCorsHeaders(request, res);
   }
 
-  // Fetch the related song
+  // fetch the related song
   const { data: song, error: songError } = await supabaseAdmin
     .from("songs")
     .select("*")

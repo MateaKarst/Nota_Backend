@@ -24,11 +24,11 @@ export async function DELETE(
             { message: "Error deleting track", error: trackDeleteError.message },
             { status: 500 }
         );
-        return addCorsHeaders(request, res); // ✅ Pass request
+        return addCorsHeaders(request, res); 
     }
 
     const res = NextResponse.json({ message: "Track deleted" }, { status: 200 });
-    return addCorsHeaders(request, res); // ✅ Pass request
+    return addCorsHeaders(request, res); 
 }
 
 

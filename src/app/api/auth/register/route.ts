@@ -1,3 +1,4 @@
+// src/app/api/auth/register/route.ts
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { addCorsHeaders, handlePreflight } from "@/utils/cors";
@@ -30,14 +31,11 @@ export async function POST(request: Request) {
     }
 
     console.log("🛠️ Creating user in Supabase Auth...");
-    // const { data: userAuth, error: errorAuth } = await supabaseAdmin.auth.signUp({
-    //     email,
-    //     password,
-    // });
+
     const { data: userAuth, error: errorAuth } = await supabaseAdmin.auth.admin.createUser({
         email,
         password,
-        email_confirm: true, // <- This skips the confirmation step
+        email_confirm: true,
     });
 
     if (errorAuth || !userAuth.user?.id) {
@@ -75,10 +73,10 @@ export async function POST(request: Request) {
                 .getPublicUrl(filePath);
 
             avatar_url = publicUrlData.publicUrl;
-            console.log("✅ Avatar uploaded successfully:", avatar_url);
+            console.log("Avatar uploaded successfully:", avatar_url);
         }
     } catch (uploadError) {
-        console.error("❌ Failed to upload avatar:", uploadError);
+        console.error("Failed to upload avatar:", uploadError);
         await supabaseAdmin.auth.admin.deleteUser(userId);
         const res = NextResponse.json(
             { message: "Failed to upload avatar. User deleted to maintain integrity." },
@@ -98,7 +96,7 @@ export async function POST(request: Request) {
     ]);
 
     if (insertError) {
-        console.error("❌ Error inserting into user_details:", insertError.message);
+        console.error("Error inserting into user_details:", insertError.message);
         await supabaseAdmin.auth.admin.deleteUser(userId);
         const res = NextResponse.json(
             { message: "Failed to insert user details. Auth user deleted.", error: insertError.message },
@@ -107,13 +105,58 @@ export async function POST(request: Request) {
         return addCorsHeaders(request, res);
     }
 
-    console.log("✅ User profile inserted successfully");
+    console.log("User profile inserted successfully");
+
+    // sign in the user to get session tokens
+    const { data: signInData, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
+        email,
+        password,
+    });
+
+    if (signInError || !signInData.session) {
+        console.error("Failed to sign in new user:", signInError?.message);
+        
+        await supabaseAdmin.auth.admin.deleteUser(userId);
+        const res = NextResponse.json(
+            { message: "Failed to sign in new user", error: signInError?.message },
+            { status: 500 }
+        );
+        return addCorsHeaders(request, res);
+    }
+
+    const accessToken = signInData.session.access_token;
+    const refreshToken = signInData.session.refresh_token;
+
     const res = NextResponse.json(
         {
-            message: "User successfully created",
-            user: userId
+            message: "User successfully created and logged in",
+            user: {
+                id: userId,
+                email,
+                name,
+                access_token: accessToken,
+                refresh_token: refreshToken,
+            },
         },
         { status: 200 }
     );
+
+    // set auth cookies
+    res.cookies.set('access_token', accessToken, {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: true,
+        path: '/',
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+    });
+
+    res.cookies.set('refresh_token', refreshToken, {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: true,
+        path: '/',
+        maxAge: 60 * 60 * 24 * 30, // 30 days
+    });
+
     return addCorsHeaders(request, res);
 }
