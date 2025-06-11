@@ -85,15 +85,13 @@ export async function POST(request: Request) {
         return addCorsHeaders(request, res);
     }
 
-    const { error: insertError } = await supabaseAdmin.from("user_details").insert([
-        {
-            id: userId,
-            email,
-            name,
-            avatar: avatar_url,
-            profile_description,
-        },
-    ]);
+    const { error: insertError } = await supabaseAdmin.from("user_details").insert([{
+        id: userId,
+        email,
+        name,
+        avatar: avatar_url,
+        profile_description,
+    }]);
 
     if (insertError) {
         console.error("Error inserting into user_details:", insertError.message);
@@ -107,6 +105,17 @@ export async function POST(request: Request) {
 
     console.log("User profile inserted successfully");
 
+    // ⬇️ Fetch the newly inserted user_details
+    const { data: userDetails, error: detailsError } = await supabaseAdmin
+        .from('user_details')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+    if (detailsError) {
+        console.error("Failed to fetch user_details:", detailsError.message);
+    }
+
     // sign in the user to get session tokens
     const { data: signInData, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
         email,
@@ -115,7 +124,6 @@ export async function POST(request: Request) {
 
     if (signInError || !signInData.session) {
         console.error("Failed to sign in new user:", signInError?.message);
-        
         await supabaseAdmin.auth.admin.deleteUser(userId);
         const res = NextResponse.json(
             { message: "Failed to sign in new user", error: signInError?.message },
@@ -136,18 +144,18 @@ export async function POST(request: Request) {
                 name,
                 access_token: accessToken,
                 refresh_token: refreshToken,
+                user_details: userDetails || null,
             },
         },
         { status: 200 }
     );
 
-    // set auth cookies
     res.cookies.set('access_token', accessToken, {
         httpOnly: true,
         sameSite: 'lax',
         secure: true,
         path: '/',
-        maxAge: 60 * 60 * 24 * 7, // 7 days
+        maxAge: 60 * 60 * 24 * 7,
     });
 
     res.cookies.set('refresh_token', refreshToken, {
@@ -155,7 +163,7 @@ export async function POST(request: Request) {
         sameSite: 'lax',
         secure: true,
         path: '/',
-        maxAge: 60 * 60 * 24 * 30, // 30 days
+        maxAge: 60 * 60 * 24 * 30,
     });
 
     return addCorsHeaders(request, res);

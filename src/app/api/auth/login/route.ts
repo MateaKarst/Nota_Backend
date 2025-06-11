@@ -19,35 +19,47 @@ export async function POST(request: Request) {
         return addCorsHeaders(request, errorResponse);
     }
 
+    const userId = data.user?.id;
     const accessToken = data.session.access_token;
     const refreshToken = data.session.refresh_token;
+
+    // Fetch user_details from your custom table
+    const { data: userDetails, error: detailsError } = await supabase
+        .from('user_details')
+        .select('*')
+        .eq('user_id', userId)
+        .single(); // Assuming there's one record per user
+
+    if (detailsError) {
+        console.error('Error fetching user_details:', detailsError.message);
+    }
 
     const response = NextResponse.json({
         message: 'Logged in',
         user: {
-            id:data.user?.id,
+            id: data.user?.id,
             email: data.user?.email,
             name: data.user?.user_metadata?.full_name || '',
             access_token: accessToken,
             refresh_token: refreshToken,
+            user_details: userDetails || null,
         },
     });
 
-    // set cookies AFTER response is created
     response.cookies.set('access_token', accessToken, {
         httpOnly: true,
         sameSite: 'lax',
-        secure: true, 
+        secure: true,
         path: '/',
-        maxAge: 60 * 60 * 24 * 7, // 7 days
+        maxAge: 60 * 60 * 24 * 7,
     });
 
     response.cookies.set('refresh_token', refreshToken, {
         httpOnly: true,
         sameSite: 'lax',
-        secure: true, 
+        secure: true,
         path: '/',
-        maxAge: 60 * 60 * 24 * 30, // 30 days
+        maxAge: 60 * 60 * 24 * 30,
     });
 
     return addCorsHeaders(request, response);
