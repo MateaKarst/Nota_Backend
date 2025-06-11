@@ -54,7 +54,7 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     const songId = (await params).id;
-
+    // 1. Fetch the song
     const { data: song, error: songError } = await supabaseAdmin
         .from("songs")
         .select("*")
@@ -69,6 +69,7 @@ export async function GET(
         return addCorsHeaders(request, res);
     }
 
+    // 2. Fetch tracks for the song
     const { data: tracks, error: tracksError } = await supabaseAdmin
         .from("tracks")
         .select("*")
@@ -82,7 +83,37 @@ export async function GET(
         return addCorsHeaders(request, res);
     }
 
-    const res = NextResponse.json({ ...song, tracks }, { status: 200 });
+    // 3. Get unique user_ids from tracks
+    const trackUserIds = [...new Set(tracks.map((track) => track.user_id).filter(Boolean))];
+
+    // 4. Fetch user_details for those user_ids
+    let trackUsersDetails = [];
+    if (trackUserIds.length > 0) {
+        const { data, error } = await supabaseAdmin
+            .from("user_details")
+            .select("*")
+            .in("id", trackUserIds);  // assuming 'id' is the correct field
+
+        if (error) {
+            const res = NextResponse.json(
+                { message: "Error fetching track user details", error: error.message },
+                { status: 500 }
+            );
+            return addCorsHeaders(request, res);
+        }
+
+        trackUsersDetails = data || [];
+    }
+
+    // 5. Map user_details to each track
+    const trackUserMap = new Map(trackUsersDetails.map((u) => [u.id, u]));
+    const enrichedTracks = tracks.map((track) => ({
+        ...track,
+        user_details: trackUserMap.get(track.user_id) || null,
+    }));
+
+    // 6. Return song with enriched tracks
+    const res = NextResponse.json({ ...song, tracks: enrichedTracks }, { status: 200 });
     return addCorsHeaders(request, res);
 }
 
