@@ -13,6 +13,7 @@ const allowedOrigins = [
     'http://192.168.1.38:3002',
 
     // app sites
+    'https://nota-frontend-kappa.vercel.app',
     'https://nota-community.netlify.app',
     'https://nota-backend-delta.vercel.app'
 ]
